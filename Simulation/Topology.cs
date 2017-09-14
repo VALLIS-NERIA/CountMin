@@ -18,7 +18,7 @@ namespace Simulation {
             var json = new TopologyJson();
             for (int i = 0; i < Switches.Count; i++) {
                 var sw = Switches[i];
-                json.switches.Add(new SwitchJson(i));
+                json.switches.Add(new SwitchJson(i,sw.Name));
                 foreach(var sw2 in sw.LinkedSwitches) {
                     json.switches[i].linkedSwitches.Add(Switches.IndexOf(sw2));
                 }

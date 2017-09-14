@@ -9,14 +9,17 @@ namespace Simulation {
     public class Switch {
         private static Random rnd = new Random();
 
-        public string Name { get; }
+        public string Name { get; set; }
 
         public List<Switch> LinkedSwitches { get; private set; }
 
+        public bool IsEdge { get; set; }
+
         public override string ToString() { return Name; }
 
-        public Switch(string name = "unnamed switch", int portCount = 0) {
+        public Switch(string name = "unnamed switch", bool isEdge=false) {
             this.Name = name;
+            this.IsEdge = isEdge;
             this.LinkedSwitches = new List<Switch>();
         }
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Simulation {
     public class Flow : IEnumerable<Switch> {
-        //public string Name;
+        //public string name;
         public Switch IngressSwitch;
 
         public Switch OutgressSwitch;
@@ -60,6 +60,6 @@ namespace Simulation {
         public override string ToString() { return $"{IngressSwitch} =={Traffic:F1}=> {OutgressSwitch}"; }
 
         IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
-        //public string ToString(bool inShort) { return inShort ? $"{Name}@{Switch.Name}" : ToString(); }
+        //public string ToString(bool inShort) { return inShort ? $"{name}@{Switch.name}" : ToString(); }
     }
 }

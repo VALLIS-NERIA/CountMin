@@ -13,7 +13,7 @@ using Tup = System.ValueTuple<double, double>;
 namespace Simulator {
     class Program {
         static void Main(string[] args) {
-            Topology topo = JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText("hyperx.json")).ToTopology();
+            Topology topo = JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText("fattree8.json")).ToTopology();
             List<Flow> flowSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText("10000_3_28.json")).ToCoflow(topo);
             var cm = new CountMin(200, 2);
             foreach (Flow flow in flowSet) {
