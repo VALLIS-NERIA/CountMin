@@ -7,9 +7,9 @@ using Newtonsoft.Json;
 
 namespace Simulation {
     public class Topology {
-        private static Random rnd=new Random();
+        private static Random rnd = new Random();
         public List<Switch> Switches;
-
+        public int aaa { get; set; }
         public Topology() {
             Switches = new List<Switch>();
         }
