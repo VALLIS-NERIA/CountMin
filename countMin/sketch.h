@@ -1,199 +1,60 @@
-#pragma once
-#ifndef SKETCH_H
-#define SKETCH_H 
-
 #include <map>
 #include <vector>
-#include <string.h>
-#include "md5.h"
-#include <iostream>
+#include <cstring>
+#include <pthread.h>
+using std::vector;
+using std::map;
 typedef __int64_t int64;
 typedef __uint32_t uint32;
-typedef __uint64_t uint64;
 
-template <typename T>
-class count_line {
+class CountArray {
 private:
-	std::vector<T> count;
-	int w;
-	// hash seed is used as a mask
-	int hash_seed;
-	pthread_mutex_t* mutex;
+    int64* count;
+    int w;
+    // hash seed is used as a mask
+    int hash_seed;
+    pthread_mutex_t* mutex;
 public:
-	count_line() {}
+    CountArray();
 
-	count_line(int _w) {
-		this->w = _w;
-		this->count = std::vector<T>(_w);
-		this->hash_seed = rand();
-		mutex = new pthread_mutex_t();
-		int err = pthread_mutex_init(mutex, NULL);
-	}
+    CountArray(int _w);
 
-	~count_line() {}
+    ~CountArray();
 
-	// hash anything into w
-	int hash(void* key, int key_length) {
-		unsigned char* tmp = (unsigned char*)malloc(key_length);
-		memcpy(tmp, key, key_length);
-		unsigned char buf[16];
-		MD5_CTX md5;
-		MD5Init(&md5);
-		MD5Update(&md5, tmp, key_length);
-		MD5Final(&md5, buf);
-		uint32* ibuf = (uint32*)buf;
-		uint h = ibuf[0] + ibuf[1] + ibuf[2] + ibuf[3];
-		h = (h ^ hash_seed) % w;
-		free(tmp);
-		return h;
-		//// in bytes.
-		//int length = key_length;
-		//// pad
-		//if (key_length % 4)length = key_length + (key_length % 4);
-		//uint32* padded_key = new uint32[length / 4];
-		//memset(padded_key, 0, length);
-		//memcpy(padded_key, flow_id, key_length);
-		//uint32 sum = 0;
-		//for (int i = 0; i < length / 4; i++) {
-		//    sum += padded_key[i];
-		//}
-		//sum = sum ^ hash_seed;
-		//int h = sum / w;
-		//return h;
-	}
+    // hash anything into w
+    int hash(void* key, int key_length);
 
-	uint32 move(uint32 value, uint32 n) {
-		uint32 value1, value2;
-		if (n >= 0) {
-			//正值表示向右循环移动
-			while (n > sizeof(uint32) * 8) {
-				n -= sizeof(uint32) * 8;
-			}
-			value1 = value << (sizeof(uint32) * 8 - n);
-			value2 = value >> n;
-			value = value1 | value2;
-		}
-		else {
-			//负值表示向左循环移动
-			while (abs(n) > (sizeof(uint32) * 8)) {
-				n += sizeof(uint32) * 8;
-			}
-			value1 = value >> (sizeof(uint32) * 8 - abs(n));
-			value2 = value << abs(n);
-			value = value1 | value2;
-		}
-		return (value);
-	}
+    uint32 move(uint32 value, uint32 n);
 
-	T operator[](int index) {
-		return count[index];
-	}
+    int64 operator [](int index);
 
-	int add(void* key, int key_length, T value) {
-		pthread_mutex_lock(mutex);
-		int idx = hash(key, key_length);
-		count[idx] += value;
-		pthread_mutex_unlock(mutex);
-		return count[idx];
-	}
+    int add(void* key, int key_length, int64 value);
 
-	T query(void* key, int key_length) {
-		int idx = hash(key, key_length);
-		return count[idx];
-	}
-
-	void print() {
-		for (auto val : count) {
-			std::cout << val << '\t';
-		}
-		std::cout << std::endl;
-	}
+    int64 query(void* key, int key_length);
 };
 
-template <typename T>
-class switch_sketch {
+class CountMin {
 private:
-	std::vector<count_line<T>> count;
-	int w;
-	int d;
+    std::vector<CountArray> count;
+    int w;
+    int d;
 public:
-	switch_sketch() {}
+    CountMin();
+    CountMin(int _w, int _d);
 
-	switch_sketch(int _w, int _d) {
-		this->w = _w;
-		this->d = _d;
-		this->count = std::vector<count_line<T>>(d);
-		for (int i = 0; i < d; i++) {
-			count[i] = count_line<T>(w);
-		}
-	}
+    ~CountMin();
 
-	~switch_sketch() {}
-
-	int add(void* key, int key_length, T value) {
-		for (auto& array : count) {
-			array.add(key, key_length, value);
-		}
-		return 0;
-	}
-
-	T query(void* key, int key_length) {
-		T min = 999999999999L;
-		for (auto& array : count) {
-			auto t = array.query(key, key_length);
-			if (t < min)min = t;
-		}
-		return min;
-	}
-
-	void print() {
-		for (auto line : count) {
-			line.print();
-		}
-	}
+    int add(void* key, int key_length, int64 value);
+    int64 query(void* key, int key_length);
 };
 
-template <typename T>
-class count_min {
+class Sketch {
 private:
-	std::map<std::string, switch_sketch<T>> map;
-	int w;
-	int d;
+    std::map<void*, CountMin> map;
+    int w;
+    int d;
 public:
-	count_min(int _w, int _d) {
-		this->w = _w;
-		this->d = _d;
-		map = std::map<std::string, switch_sketch<T>>();
-	}
-
-	int add(std::string _datapath, void* _flow, int _flow_length, int _packet_size) {
-		if(_datapath[0]=='\0') {
-			return -1;
-		}
-		if (map.count(_datapath) != 1) {
-			//map.insert(std::pair<void*,switch_sketch>(_datapath, switch_sketch(w, d)));
-			map[_datapath] = switch_sketch<T>(w, d);
-		}
-		map[_datapath].add(_flow, _flow_length, _packet_size);
-		return 0;
-	}
-
-	T query(void* _flow, int _flow_length) {
-		T min = 999999999999L;
-		for (auto& item : map) {
-			auto t = item.second.query(_flow, _flow_length);
-			if (t < min)min = t;
-		}
-		return min;
-	}
-
-	void print() {
-		for(auto pair:map) {
-			std::cout << pair.first << std::endl;
-			pair.second.print();
-		}
-	}
-
+    Sketch(int _w, int _d);
+    int add(void* _datapath, int _dp_length, void* _flow, int _flow_length, int _packet_size);
+    int64 query(void* _flow, int _flow_length);
 };
-
-#endif // !SKETCH_H
