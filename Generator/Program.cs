@@ -23,20 +23,27 @@ namespace Generator {
             //}
             Topology topo = JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText("fattree8.json")).ToTopology();
             //foreach (var t in new[] {0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}) {
-            int i = 10000;
+            var sr = new StreamReader("udp.txt");
+
+            //int i = 10000;
             var flowSet = new List<Flow>();
-            while (i-- > 0) {
-                double traffic = rnd.NextDouble() < 0.2 ? 16 : 1;
+            while (!sr.EndOfStream) {
+                double traffic;
+                try {
+                    traffic = int.Parse(sr.ReadLine());
+                }
+                catch {
+                    continue;
+                }
                 flowSet.Add(RandomFlow(topo, 3, traffic));
             }
             var json = flowSet.ToCoflowJson(topo);
             string str = JsonConvert.SerializeObject(json);
-            using (var sw = new StreamWriter($"10000_3_28.json")) {
+            using (var sw = new StreamWriter($"udp_3_28.json")) {
                 sw.Write(str);
             }
         }
 
-    
 
         static Flow RandomFlow(Topology topo, int length, double traffic) {
             var f = new List<Switch>();
@@ -75,47 +82,38 @@ namespace Generator {
             return topo;
         }
 
-        private class Pod
-        {
+        private class Pod {
             public List<Switch> Aggr;
             public List<Switch> Edge;
             public string Name;
             private int K;
-            public Pod(string name,int K)
-            {
+
+            public Pod(string name, int K) {
                 this.Name = name;
                 this.K = K;
                 Aggr = new List<Switch>();
                 Edge = new List<Switch>();
-                for (int i = 0; i <  K / 2; i++) {
+                for (int i = 0; i < K / 2; i++) {
                     Aggr.Add(new Switch($"{name} Aggr {i}"));
                     Edge.Add(new Switch($"{name} Edge {i}", true));
                 }
-                foreach (var sw in Aggr)
-                {
-                    foreach (var swe in Edge)
-                    {
+                foreach (var sw in Aggr) {
+                    foreach (var swe in Edge) {
                         sw.Link(swe);
                     }
                 }
             }
 
-            public void CoreLink(IList<Switch> core)
-            {
+            public void CoreLink(IList<Switch> core) {
                 int i = 0;
-                foreach (var sw in Aggr )
-                {
-                    for (int j = 0; j < K/2; j++)
-                    {
+                foreach (var sw in Aggr) {
+                    for (int j = 0; j < K / 2; j++) {
                         sw.Link(core[i++]);
                     }
                 }
             }
 
-            public IEnumerable<Switch> GetSwitches()
-            {
-                return Aggr.Concat(Edge);
-            }
+            public IEnumerable<Switch> GetSwitches() { return Aggr.Concat(Edge); }
         }
 
         static Topology FatTreeGen(int K) {
@@ -123,26 +121,22 @@ namespace Generator {
             var n = K / 2;
             var topo = new Topology();
             var core = new List<Switch>();
-            var pods=new List<Pod>();
+            var pods = new List<Pod>();
             for (int i = 0; i < n * n; i++) {
                 core.Add(new Switch($"Core {i}"));
             }
-            for (int i = 0; i < K; i++)
-            {
+            for (int i = 0; i < K; i++) {
                 var pod = new Pod($"Pod {i}", K);
                 pods.Add(pod);
                 pod.CoreLink(core);
             }
             var switches = new List<Switch>();
             switches = switches.Concat(core).ToList();
-            foreach (var pod in pods )
-            {
+            foreach (var pod in pods) {
                 switches = switches.Concat(pod.GetSwitches()).ToList();
             }
             topo.Switches = switches;
             return topo;
-
-
         }
     }
 }
