@@ -44,6 +44,10 @@ std::string my_flow_key::to_string() {
     return sstr.str();
 }
 
+int operator<(my_flow_key left, my_flow_key right) {
+    return left.ip.addr.src < right.ip.addr.src;
+}
+
 //defused_packet::~defused_packet() {
 //	free(port_name);
 //	free(flow_id);

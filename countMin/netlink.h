@@ -60,6 +60,7 @@ struct my_flow_key {
     std::string to_string();
 };
 
+int operator < (my_flow_key left, my_flow_key right);
 
 //struct defused_packet {
 //    int port_name_len;
