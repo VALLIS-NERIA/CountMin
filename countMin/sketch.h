@@ -207,7 +207,7 @@ public:
     }
     virtual void print() {
         for (int i = 0; i < this->w;i++) {
-            std::cout << this->max_key[i]<< << '\t';
+            std::cout << this->max_key[i]<<" : "<<this->count[i] << '\t';
         }
         std::cout << std::endl;
     }
