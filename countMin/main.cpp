@@ -12,20 +12,6 @@
 typedef __int64_t int64;
 typedef __uint32_t uint32;
 
-
-int hash(void* key, int key_length) {
-    unsigned char buf[16];
-    MD5_CTX md5;
-    MD5Init(&md5);
-    MD5Update(&md5, (unsigned char*)key, key_length);
-    MD5Final(&md5, buf);
-    uint32* ibuf = (uint32*)buf;
-    int h = ibuf[0] + ibuf[1] + ibuf[2] + ibuf[3];
-    //h = h / w;
-    //free(tmp);
-    return h;
-}
-
 std::string chop(char* s) {
     char* s2 = (char*)malloc(strlen(s));
     for (int i = 0; i < strlen(s); i++) {
@@ -42,7 +28,20 @@ std::string chop(char* s) {
     return string;
 }
 
-int __main() {}
+std::map<std::string, std::map<my_flow_key, uint64>> stats;
+std::map<my_flow_key, int> flows;
+uint64 get_stats(my_flow_key key) {
+    uint64 ret = 0;
+    for(auto m : stats) {
+        if(!m.second.count(key)) {
+            continue;
+        }
+        else if(m.second[key]>ret) {
+            ret = m.second[key];
+        }
+    }
+    return ret;
+}
 
 int main(int argc, char** argv) {
     int ret;
@@ -63,7 +62,7 @@ int main(int argc, char** argv) {
 
     count_min<my_flow_key, uint64, count_line_ex<my_flow_key, uint64>> cm(5, 2);
 
-    std::map<my_flow_key, uint64> stats;
+
     while (true) {
         memset(&info, 0, sizeof(info));
         ret = recvfrom(skfd, &info, sizeof(my_msg), 0, (sockaddr *)&dest_addr, &dest_size);
@@ -77,32 +76,31 @@ int main(int argc, char** argv) {
 
         uint64 traffic;
         size_t length;
-        //char* key = (char*)&(spkt.key);
-        //int key_length = sizeof(spkt.key);
-        //printf("%s \n", spkt.port_name);
 
+        auto washed_key = spkt.key.wash();
         switch (spkt.request_type) {
         case NLREQUEST_FETCH:
-            traffic = cm.query(spkt.key);
+            traffic = cm.query(washed_key);
             reply_packet reply;
             reply.countmin_traffic = traffic;
             reply.flow = spkt.flow_pointer;
             reply.key = spkt.key;
             length = sizeof(reply);
-            printf("flow : %s   cm : %llu   actual : %llu\n", spkt.key.to_string().c_str(), traffic, stats[spkt.key]);
+            printf("flow : %s   cm : %llu   actual : %llu\n", washed_key.to_string().c_str(), traffic, get_stats(washed_key));
             ret = nl_send(skfd, &reply, length, local.nl_pid, dest_addr);
-            cm.print();
+            //cm.print();
             break;
         case NLREQUEST_REPORT:
             if (spkt.packet_size) {
                 std::string sw_name = chop(spkt.port_name);
-                cm.add(sw_name, spkt.key, spkt.packet_size);
-                if (!stats.count(spkt.key)) {
-                    std::cout << "new flow: " << spkt.key.to_string() << " with ovs stat " << spkt.flow_traffic << std::endl;
+                cm.add(sw_name, washed_key, spkt.packet_size);
+                if (!flows.count(washed_key)) {
+                    std::cout << "new flow: " << washed_key.to_string() << " with ovs stat " << spkt.flow_traffic << std::endl;
                 }
-                stats[spkt.key] += spkt.packet_size;
-                traffic = cm.query(spkt.key);
-                //printf("%s: %s %d %lld %lld\n", sw_name.c_str(), spkt.key.to_string().c_str(), spkt.packet_size, traffic, spkt.flow_traffic);
+                stats[sw_name][washed_key] += spkt.packet_size;
+                flows[washed_key] = 1;
+                traffic = cm.query(washed_key);
+                //printf("%s: %s %d %lld %lld\n", sw_name.c_str(), key.to_string().c_str(), spkt.packet_size, traffic, spkt.flow_traffic);
             }
             else {
                 printf(".");

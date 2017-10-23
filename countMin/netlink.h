@@ -41,27 +41,37 @@ struct ipv4_key {
         __be32 src; /* IP source address. */
         __be32 dst; /* IP destination address. */
     } addr;
+
     struct {
         uint8_t sha[ETH_ALEN]; /* ARP source hardware address. */
         uint8_t tha[ETH_ALEN]; /* ARP target hardware address. */
     } arp;
+
+    int operator ==(ipv4_key another);
+    ipv4_key wash();
 };
 
 struct port_key {
     __be16 src; /* TCP/UDP/SCTP source port. */
     __be16 dst; /* TCP/UDP/SCTP destination port. */
     __be16 flags; /* TCP flags. */
+
+    int operator ==(port_key another);
+    port_key wash();
+
 };
 
 struct my_flow_key {
     struct ipv4_key ip;
     struct port_key port;
 
-    std::string to_string();
+    std::string to_string() const;
+    //int operator ==(my_flow_key another);
+    my_flow_key wash();
 };
 
-int operator < (my_flow_key left, my_flow_key right);
-
+int operator <(my_flow_key left, my_flow_key right);
+int operator==(my_flow_key left, my_flow_key another);
 //struct defused_packet {
 //    int port_name_len;
 //    int flow_id_size;

@@ -107,9 +107,9 @@ public:
     switch_sketch(int _w, int _d) {
         this->w = _w;
         this->d = _d;
-        this->count = std::vector<count_line<TKey, TValue>>(d);
+        this->count = std::vector<TLine>(d);
         for (int i = 0; i < d; i++) {
-            count[i] = count_line<TKey, TValue>(w);
+            count[i] = TLine(w);
         }
     }
 
@@ -150,7 +150,7 @@ public:
     count_min(int _w, int _d) {
         this->w = _w;
         this->d = _d;
-        map = std::map<std::string, switch_sketch<TKey, TValue>>();
+        map = std::map<std::string, switch_sketch<TKey, TValue, TLine>>();
     }
 
     int add(std::string datapath, TKey flow_key, int packet_size) {
@@ -158,7 +158,7 @@ public:
             return -1;
         }
         if (map.count(datapath) != 1) {
-            map[datapath] = switch_sketch<TKey, TValue>(w, d);
+            map[datapath] = switch_sketch<TKey, TValue, TLine>(w, d);
         }
         map[datapath].add(flow_key, packet_size);
         return 0;
@@ -190,7 +190,8 @@ public:
 
     virtual int add(TKey key, TValue value) {
         pthread_mutex_lock(this->mutex);
-        int idx = hash(key);
+        int idx = this->hash(key);
+        //TKey kk = max_key[idx];
         if (key == max_key[idx])
             this->count[idx] += value;
         else {
@@ -207,10 +208,15 @@ public:
     }
     virtual void print() {
         for (int i = 0; i < this->w;i++) {
-            std::cout << this->max_key[i]<<" : "<<this->count[i] << '\t';
+            std::cout << this->max_key[i].to_string() << " : " << this->count[i] << '\t';
         }
         std::cout << std::endl;
     }
+
+    count_line_ex(int _w):count_line<TKey, TValue>(_w) {
+        max_key= std::vector<TKey>(_w);
+    }
+    count_line_ex(){}
 };
 
 #endif // !SKETCH_H

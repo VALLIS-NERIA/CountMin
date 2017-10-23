@@ -1,4 +1,5 @@
 #include"netlink.h"
+#include <netinet/in.h>
 #include <sstream>
 
 
@@ -38,14 +39,53 @@ std::string ip_to_str(uint32 ip) {
     return sstr.str();
 }
 
-std::string my_flow_key::to_string() {
+int ipv4_key::operator==(ipv4_key another) {
+    return this->addr.src == another.addr.src && this->addr.dst == another.addr.dst;
+}
+
+ipv4_key ipv4_key::wash() {
+    ipv4_key another;
+    another = *this;
+    memset(another.arp.sha, 0, sizeof(another.arp.sha) * sizeof(decltype(another.arp.sha[0])));
+    memset(another.arp.tha, 0, sizeof(another.arp.tha) * sizeof(decltype(another.arp.tha[0])));
+    return another;
+}
+
+int port_key::operator==(port_key another) {
+    return this->src == another.src && this->dst == another.dst;
+}
+
+port_key port_key::wash() {
+    port_key another;
+    another = *this;
+    another.src = 0;
+    another.flags = 0;
+    return another;
+}
+
+std::string  my_flow_key::to_string() const {
+    if(this->ip.addr.src==0&&this->ip.addr.dst==0&&this->port.src==0&&this->port.dst==0) {
+        return "null";
+    }
     std::stringstream sstr;
-    sstr << ip_to_str(this->ip.addr.src) << ':' << this->port.src << " => " << ip_to_str(this->ip.addr.dst) << ':' << this->port.dst;
+    sstr << ip_to_str(this->ip.addr.src) << ':' << this->port.src << " => " << ip_to_str(this->ip.addr.dst) << ':' << ntohs(this->port.dst);
     return sstr.str();
 }
 
+
+int operator==(my_flow_key left,my_flow_key another) {
+    return (left.ip == another.ip) && (left.port == another.port);
+}
+
+my_flow_key my_flow_key::wash() {
+    my_flow_key another;
+    another.ip = this->ip.wash();
+    another.port = this->port.wash();
+    return another;
+}
+
 int operator<(my_flow_key left, my_flow_key right) {
-    return left.ip.addr.src < right.ip.addr.src;
+    return left.port.dst < right.port.dst;
 }
 
 //defused_packet::~defused_packet() {
