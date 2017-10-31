@@ -35,7 +35,7 @@ std::string sw_flow_id::to_string() {
 
 std::string ip_to_str(uint32 ip) {
     std::stringstream sstr;
-    sstr << (ip) % 0x1000000 << '.' << (ip / 0x100) % 0x10000 << '.' << (ip / 0x10000) % 0x100 << '.' << ip / 0x1000000;
+    sstr << (ip) % 0x100 << '.' << (ip / 0x100) % 0x100 << '.' << (ip / 0x10000) % 0x100 << '.' << ip / 0x1000000;
     return sstr.str();
 }
 
