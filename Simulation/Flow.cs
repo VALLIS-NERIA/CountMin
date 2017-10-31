@@ -18,7 +18,7 @@ namespace Simulation {
         /// <summary>
         /// Jump nodes, or hops.
         /// </summary>
-        public List<Switch> Nodes ;
+        public List<Switch> Nodes;
 
         /// <summary>
         /// traffic. s(f).
@@ -26,11 +26,11 @@ namespace Simulation {
         public double Traffic;
 
 
-        public Flow()  { this.Nodes=new List<Switch>();}
+        public Flow() { this.Nodes = new List<Switch>(); }
 
-        public Flow(List<Switch> nodes,double traffic) :this(nodes) { this.Traffic = traffic; }
+        public Flow(List<Switch> nodes, double traffic) : this(nodes) { this.Traffic = traffic; }
 
-        public Flow(List<Switch> nodes)  {
+        public Flow(List<Switch> nodes) {
             Nodes = nodes;
             IngressSwitch = nodes.First();
             OutgressSwitch = nodes.Last();

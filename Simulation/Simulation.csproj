@@ -56,6 +56,7 @@
     <Compile Include="FlowJson.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Switch.cs" />
+    <Compile Include="TopoAlgorithm.cs" />
     <Compile Include="Topology.cs" />
     <Compile Include="TopologyJson.cs" />
   </ItemGroup>
