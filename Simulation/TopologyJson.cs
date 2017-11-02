@@ -10,6 +10,8 @@ namespace Simulation {
         public int num { get; set; }
         public List<int> linkedSwitches { get; set; }
         public string name { get; set; }
+        //public List<double> trafficLoad { get; set; }
+
         public SwitchJson(int num,string name=null) {
             linkedSwitches=new List<int>();
             this.num = num;

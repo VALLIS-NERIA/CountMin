@@ -9,7 +9,6 @@ namespace Simulation {
     public class Topology {
         private static Random rnd = new Random();
         public List<Switch> Switches;
-        public int aaa { get; set; }
         public Topology() {
             Switches = new List<Switch>();
         }
@@ -26,7 +25,14 @@ namespace Simulation {
             return json;
         }
 
-        public Switch RandomSwitch() { return Switches[rnd.Next(Switches.Count)]; }
+        public Switch RandomSwitch() { return Switches[(rnd.Next(Switches.Count)/2)*2]; }
 
+        public Dictionary<(Switch src, Switch next), double> FetchLinkLoad() {
+            var list = new Dictionary<(Switch src, Switch next), double>();
+            foreach (Switch sw in Switches) {
+                list = list.Concat(sw.LinkLoad).ToDictionary(k=>k.Key,k=>k.Value);
+            }
+            return list;
+        }
     }
 }

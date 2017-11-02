@@ -1,0 +1,44 @@
+{
+    "switches": [
+        {
+            "num": 0,
+            "linkedSwitches": [
+                1,
+                3
+            ],
+            "name": "Switch0"
+        },
+        {
+            "num": 1,
+            "linkedSwitches": [
+                0,
+                2
+            ],
+            "name": "Switch1"
+        },
+        {
+            "num": 2,
+            "linkedSwitches": [
+                1,
+                3
+            ],
+            "name": "Switch2"
+        },
+        {
+            "num": 3,
+            "linkedSwitches": [
+                0,
+                4
+            ],
+            "name": "Switch3"
+        },
+        {
+            "num": 4,
+            "linkedSwitches": [
+                3
+            ],
+            "name": "Switch4"
+        }
+    ],
+    "switchCount": 5
+}

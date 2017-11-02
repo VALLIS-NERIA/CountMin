@@ -19,8 +19,6 @@ namespace Simulation {
             foreach (var swIdx in this.path) {
                 f.Nodes.Add(topo.Switches[swIdx]);
             }
-            f.IngressSwitch = f.Nodes.First();
-            f.OutgressSwitch = f.Nodes.Last();
             f.Traffic = this.traffic;
             return f;
         }

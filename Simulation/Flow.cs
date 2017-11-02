@@ -2,16 +2,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Simulation {
     public class Flow : IEnumerable<Switch> {
         //public string name;
-        public Switch IngressSwitch;
+        public Switch IngressSwitch => Nodes.First();
 
-        public Switch OutgressSwitch;
+        public Switch OutgressSwitch => Nodes.Last();
 
         public List<Switch> Switches => Nodes;
 
@@ -30,17 +29,9 @@ namespace Simulation {
 
         public Flow(List<Switch> nodes, double traffic) : this(nodes) { this.Traffic = traffic; }
 
-        public Flow(List<Switch> nodes) {
-            Nodes = nodes;
-            IngressSwitch = nodes.First();
-            OutgressSwitch = nodes.Last();
-        }
+        public Flow(List<Switch> nodes) { Nodes = nodes; }
 
-        public Flow(Flow other) {
-            this.IngressSwitch = other.IngressSwitch;
-            this.OutgressSwitch = other.OutgressSwitch;
-            this.Nodes = new List<Switch>(other.Nodes);
-        }
+        public Flow(Flow other) { this.Nodes = new List<Switch>(other.Nodes); }
 
         public FlowJson ToFlowJson(Topology topo) {
             var json = new FlowJson();
@@ -55,6 +46,64 @@ namespace Simulation {
             return json;
         }
 
+        public void Assign() {
+            foreach (Switch node in Nodes) {
+                node.AssignFlow(this);
+            }
+        }
+
+        public void ReAssign(List<Switch> newRoute) {
+            this.Free();
+            this.Nodes = newRoute;
+            this.Assign();
+        }
+
+        public void OverrideAssign(List<Switch> newRoute) {
+            this.Nodes = newRoute;
+            this.Assign();
+        }
+
+        public void Free() {
+            foreach (Switch node in Nodes) {
+                node.RemoveFlow(this);
+            }
+        }
+
+        public double GetMaxLoad() {
+            double load = 0;
+            using (var iter = GetEnumerator()) {
+                iter.MoveNext();
+                while (true) {
+                    var sw = iter.Current;
+                    if (!iter.MoveNext()) {
+                        break;
+                    }
+                    var sw2 = iter.Current;
+                    var cload = sw.LinkLoad[sw2];
+                    if (cload > load) {
+                        load = cload;
+                    }
+                }
+                return load;
+            }
+        }
+
+        public double GetTotalLoad() {
+            double load = 0;
+            using (var iter = GetEnumerator()) {
+                iter.MoveNext();
+                while (true) {
+                    var sw = iter.Current;
+                    if (!iter.MoveNext()) {
+                        break;
+                    }
+                    var sw2 = iter.Current;
+                    var cload = sw.LinkLoad[sw2];
+                    load += cload;
+                }
+                return load;
+            }
+        }
 
         public IEnumerator<Switch> GetEnumerator() { return Nodes.GetEnumerator(); }
         public override string ToString() { return $"{IngressSwitch} =={Traffic:F1}=> {OutgressSwitch}"; }

@@ -7,16 +7,18 @@ using System.Threading.Tasks;
 
 namespace Simulation {
     public class Switch {
-        public class LinkDict : Dictionary<Switch, double> {
+        public class LinkDict : Dictionary<(Switch src, Switch next), double> {
             public Switch sw;
 
-            new public double this[Switch key] {
+            public double this[Switch _key] {
+                
                 get {
+                    var key = (sw, _key);
                     if (base.ContainsKey(key)) {
                         return base[key];
                     }
                     else {
-                        if (sw.LinkedSwitches.Contains(key)) {
+                        if (sw.LinkedSwitches.Contains(_key)) {
                             base.Add(key, 0);
                             return base[key];
                         }
@@ -28,11 +30,12 @@ namespace Simulation {
                 }
 
                 set {
+                    var key = (sw, _key);
                     if (base.ContainsKey(key)) {
                         base[key] = value;
                     }
                     else {
-                        if (sw.LinkedSwitches.Contains(key)) {
+                        if (sw.LinkedSwitches.Contains(_key)) {
                             base.Add(key, value);
                         }
                         else {
@@ -42,20 +45,26 @@ namespace Simulation {
                     }
                 }
             }
+
+            public override string ToString() {
+                StringBuilder sb=new StringBuilder();
+                foreach (var sw1 in sw.LinkedSwitches) {
+                    sb.Append(sw.Name).Append(" -> ").Append(sw1.Name).Append(" : ").Append(this[sw1]).Append(Environment.NewLine);
+                }
+                return sb.ToString();
+            }
+
         }
 
         private static Random rnd = new Random();
 
         public string Name { get; set; }
 
-        private LinkDict linkLoad;
-
-        public LinkDict LinkLoad {
-            get => linkLoad;
-            set => linkLoad = value;
-        }
+        public LinkDict LinkLoad { get; set; }
 
         public List<Switch> LinkedSwitches { get; private set; }
+
+        public HashSet<Flow> PassingFlows { get; set; }
 
         public bool IsEdge { get; set; }
 
@@ -66,6 +75,7 @@ namespace Simulation {
             this.IsEdge = isEdge;
             this.LinkedSwitches = new List<Switch>();
             this.LinkLoad = new LinkDict() {sw = this};
+            this.PassingFlows = new HashSet<Flow>();
         }
 
         public void Link(Switch sw) {
@@ -75,6 +85,29 @@ namespace Simulation {
                 sw.LinkedSwitches.Add(this);
         }
 
+        public void RemoveFlow(Flow f) {
+            if (PassingFlows.Contains(f)) {
+                PassingFlows.Remove(f);
+                if (f.OutgressSwitch == this)
+                    return;
+                var next = f.Nodes[f.Nodes.IndexOf(this) + 1];
+                this.LinkLoad[next] -= f.Traffic;
+            }
+            else {
+                throw new ArgumentException("This flow does not go through this switch");
+            }
+        }
+
+        public void AssignFlow(Flow f) {
+            if (PassingFlows.Contains(f)) {
+                throw new ArgumentException();
+            }
+            PassingFlows.Add(f);
+            if (f.OutgressSwitch == this)
+                return;
+            var next = f.Nodes[f.Nodes.IndexOf(this) + 1];
+            this.LinkLoad[next] += f.Traffic;
+        }
 
         public Switch RandomLinkedSwitch() { return LinkedSwitches[rnd.Next(LinkedSwitches.Count)]; }
 
