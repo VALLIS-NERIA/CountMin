@@ -1,56 +1,71 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using ElemType = System.UInt64;
 
 namespace Simulation {
-    public interface ISketch<TKey,TValue> {
-        void Update(TKey key, TValue value);
-        TValue Query(TKey key);
-        TValue this[TKey key] { get; }
-    }
+    using ElemType = System.UInt64;
 
-    
-
-
-    public class CountMin:ISketch<Flow,ElemType> {
+    public class CountMax <T, U> :ISketch<T,ElemType> where T : IEnumerable<U> {
         //public Type ElementType = new ElemType().GetType();
         private static Random rnd = new Random();
 
-        private delegate int HashFunc(object obj);
+        private delegate uint HashFunc(object obj);
 
         public delegate ElemType AddFunc(ElemType v1, ElemType v2);
 
         public class CMLine {
-            private ElemType[] stat;
+            public ElemType[] Count;
+            public object[] Keys;
             private int w;
 
             private HashFunc hash;
 
             // not necessary in simulation
             // private Mutex mutex;
-            private HashFunc hashFactory(int seed) { return o => ((o.GetHashCode() ^ seed) % w); }
+            private HashFunc hashFactory(int seed) { return o => (uint) (((uint) (o.GetHashCode() ^ seed)) % this.w); }
 
             public CMLine(int _w) {
                 this.w = _w;
-                this.stat = new ElemType[w];
+                this.Count = new ElemType[w];
+                this.Keys = new object[w];
                 hash = hashFactory(rnd.Next());
             }
 
             public int Update(object key, ElemType value, AddFunc add = null) {
-                int index = hash(key);
-                stat[index] += value;
+                int index = (int) hash(key);
+                var f_ = Keys[index];
+                int flag = 0;
+                ElemType ori = Count[index];
+                if (f_ == key) {
+                    Count[index] += value;
+                    flag = 1;
+                }
+                else {
+                    if (Count[index] > value) {
+                        Count[index] -= value;
+                        flag = 2;
+                    }
+                    else {
+                        Count[index] = value - Count[index];
+                        Keys[index] = key;
+                        flag = 3;
+                    }
+                }
+                if (Keys[hash(key)] == key && Count[hash(key)] > ((Flow) key).Traffic) {
+                    throw new Exception();
+                }
                 return index;
             }
 
-            public ElemType Query(object key) { return stat[hash(key)]; }
+            public ElemType Query(object key) {
+                if (Keys[hash(key)] == key) {
+                    if (Count[hash(key)] > ((Flow) key).Traffic) {
+                        throw new Exception();
+                    }
+                    return Count[hash(key)];
+                }
+                return 0;
+            }
 
             public ElemType this[object key] => Query(key);
         }
@@ -79,30 +94,25 @@ namespace Simulation {
                 foreach (CMLine cmLine in stat) {
                     result.Add(cmLine.Query(key));
                 }
-                return result.Min();
+                return result.Max();
             }
         }
 
-        private Dictionary<Switch, SwitchSketch> data;
+        private Dictionary<U, SwitchSketch> data;
         public int W { get; }
         private int d;
         internal AddFunc Add;
 
-        public CountMin(int _w, int _d, AddFunc add = null) {
+        public CountMax(int _w, int _d, AddFunc add = null) {
             this.W = _w;
             this.d = _d;
             this.Add = add;
             var t = typeof(ElemType);
-            if (t != typeof(short) && t != typeof(int) && t != typeof(long) && t != typeof(float) && t != typeof(double) && t != typeof(decimal)) {
-                if (add == null) {
-                    throw new ArgumentException("");
-                }
-            }
-            this.data = new Dictionary<Switch, SwitchSketch>();
+            this.data = new Dictionary<U, SwitchSketch>();
         }
 
-        public void Update(Flow flow, ElemType value) {
-            foreach (Switch sw in flow.Nodes) {
+        public void Update(T flow, ElemType value) {
+            foreach (U sw in flow) {
                 if (!data.ContainsKey(sw)) {
                     data.Add(sw, new SwitchSketch(W, d));
                 }
@@ -110,16 +120,16 @@ namespace Simulation {
             }
         }
 
-        public ElemType Query(Switch sw, Flow flow) { return data[sw].Query(flow); }
+        public ElemType Query(U sw, T flow) { return data[sw].Query(flow); }
 
-        public ElemType Query(Flow flow) {
+        public ElemType Query(T flow) {
             var result = new List<ElemType>();
-            foreach (Switch sw in flow.Nodes) {
+            foreach (U sw in flow) {
                 result.Add(Query(sw, flow));
             }
-            return result.Min();
+            return result.Max();
         }
 
-        public ulong this[Flow key] => Query(key);
+        public ulong this[T key] => this.Query(key);
     }
 }
