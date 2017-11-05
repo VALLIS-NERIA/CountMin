@@ -11,7 +11,7 @@ using MathNet.Numerics;
 using MathNet.Numerics.Distributions;
 
 namespace Generator {
-    class Program {
+    public class Program {
         static Random rnd = new Random();
         static Topology LoadTopo(string fileName) => JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology();
         static List<Flow> LoadFlow(string fileName, Topology topo) => JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName)).ToCoflow(topo);
@@ -102,13 +102,13 @@ namespace Generator {
             //}
         }
 
-        static Flow ReRoute(Flow flow, RoutingAlgorithm algo) {
+        public static Flow ReRoute(Flow flow, RoutingAlgorithm algo) {
             var src = flow.IngressSwitch;
             var dst = flow.OutgressSwitch;
             return new Flow(algo(src, dst)) {Traffic = flow.Traffic};
         }
 
-        static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo) {
+        public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo) {
             int i = 1;
             foreach (Flow flow in flowSet) {
                 // DO NOT REROUTE BLANK FLOWS

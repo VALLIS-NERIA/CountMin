@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Simulation {
     public class Switch {
+        [Serializable]
         public class LinkDict : Dictionary<(Switch src, Switch next), double> {
             public Switch sw;
 

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Simulation {
-    using ElemType = System.UInt64;
+    using ElemType = System.Int64;
 
-    public class CountMax <T, U> :ISketch<T,ElemType> where T : IEnumerable<U> {
+    public class CountMax <T, U> : ISketch<T, ElemType> where T : IEnumerable<U> {
         //public Type ElementType = new ElemType().GetType();
         private static Random rnd = new Random();
 
@@ -111,6 +111,8 @@ namespace Simulation {
             this.data = new Dictionary<U, SwitchSketch>();
         }
 
+        public CountMax(int w) : this(w, 1, null) { }
+
         public void Update(T flow, ElemType value) {
             foreach (U sw in flow) {
                 if (!data.ContainsKey(sw)) {
@@ -130,6 +132,6 @@ namespace Simulation {
             return result.Max();
         }
 
-        public ulong this[T key] => this.Query(key);
+        public ElemType this[T key] => this.Query(key);
     }
 }

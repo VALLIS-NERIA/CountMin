@@ -9,11 +9,27 @@ using MathNet.Numerics.Statistics;
 using Newtonsoft.Json;
 using Simulation;
 using Tup = System.ValueTuple<double, double>;
+using static Generator.Program;
 
 //using Tuple1=(System.Double, System.Double);
 
 namespace Simulator {
     class Program {
+
+        static List<Flow> ReRouteWithSketch (string topoJson, string flowJson,ISketch<Flow,long> sketch) {
+            var topo = LoadTopo(topoJson);
+            var flowSet = LoadFlow(flowJson, topo);
+            foreach (Flow flow in flowSet) {
+                sketch.Update(flow, (long) flow.Traffic);
+            }
+            var newFlow = new List<Flow>();
+            foreach (Flow flow in flowSet) {
+                newFlow.Add(new Flow(flow) {Traffic = sketch.Query(flow)});
+            }
+            ReRoute(newFlow, Greedy.FindPath);
+            return newFlow;
+        }
+
         static Topology LoadTopo(string fileName) => JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology();
         static List<Flow> LoadFlow(string fileName, Topology topo) => JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName)).ToCoflow(topo);
 
@@ -75,7 +91,7 @@ namespace Simulator {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             Topology topo = JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText("fattree8.json")).ToTopology();
             List<Flow> flowSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText("udp_ospf.json")).ToCoflow(topo);
-            var cm = new CountMax<Flow, Switch>(flowSet.Count / 200, 2);
+            var cm = new Simulation.CountMax<Flow, Switch>(flowSet.Count / 200, 2);
             foreach (Flow flow in flowSet) {
                 cm.Update(flow, (ulong) flow.Traffic);
             }

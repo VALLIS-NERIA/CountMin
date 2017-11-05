@@ -59,6 +59,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Generator\Generator.csproj">
+      <Project>{79ee1784-c873-4340-9b5a-7a8d50a1a084}</Project>
+      <Name>Generator</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Simulation\Simulation.csproj">
       <Project>{9cee425c-c1dc-4992-b07a-4f141ba66c35}</Project>
       <Name>Simulation</Name>

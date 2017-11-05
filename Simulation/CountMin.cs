@@ -8,19 +8,17 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ElemType = System.UInt64;
+using ElemType = System.Int64;
 
 namespace Simulation {
-    public interface ISketch<TKey,TValue> {
+    public interface ISketch <TKey, TValue> {
         void Update(TKey key, TValue value);
         TValue Query(TKey key);
         TValue this[TKey key] { get; }
     }
 
-    
 
-
-    public class CountMin:ISketch<Flow,ElemType> {
+    public class CountMin : ISketch<Flow, ElemType> {
         //public Type ElementType = new ElemType().GetType();
         private static Random rnd = new Random();
 
@@ -36,7 +34,7 @@ namespace Simulation {
 
             // not necessary in simulation
             // private Mutex mutex;
-            private HashFunc hashFactory(int seed) { return o => ((o.GetHashCode() ^ seed) % w); }
+            private HashFunc hashFactory(int seed) { return o => (o.GetHashCode() ^ seed) % this.w; }
 
             public CMLine(int _w) {
                 this.w = _w;
@@ -101,6 +99,8 @@ namespace Simulation {
             this.data = new Dictionary<Switch, SwitchSketch>();
         }
 
+        public CountMin(int w) : this(w, 1, null) { }
+
         public void Update(Flow flow, ElemType value) {
             foreach (Switch sw in flow.Nodes) {
                 if (!data.ContainsKey(sw)) {
@@ -120,6 +120,6 @@ namespace Simulation {
             return result.Min();
         }
 
-        public ulong this[Flow key] => Query(key);
+        public ElemType this[Flow key] => Query(key);
     }
 }
