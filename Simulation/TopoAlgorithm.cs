@@ -11,7 +11,6 @@ namespace Simulation {
         public double MaxLoad {
             get => GetMaxLoad() + base.Count * 0.1;
         }
-        private bool dirty = false;
 
         public new void Add(Switch sw) {
             //if (Count > 0) {
@@ -75,7 +74,7 @@ namespace Simulation {
 
     public static class OSPF {
         public class Memo {
-            public const int MaxLength=10;
+            public const int MaxLength = 10;
             public Path Route;
             public Dictionary<Switch, bool> Visited;
             public Path ShortestPath;
@@ -137,7 +136,8 @@ namespace Simulation {
             public Path Route;
             public Dictionary<Switch, bool> Visited;
             public Path ShortestPath;
-            public double Min => ShortestPath?.MaxLoad ?? double.MaxValue;
+            public double MaxLoad = 0;
+            public double ShortestPathLoad = double.MaxValue;
 
             public Memo() {
                 Route = new Path();
@@ -149,15 +149,25 @@ namespace Simulation {
 
         public static Path FindPath(Switch src, Switch dst) {
             var path = OSPF.FindPath(src, dst, null);
-            if (path.MaxLoad== 0) {
+            if (path.MaxLoad == 0) {
                 return path;
             }
             else {
-                return FindPath(src, dst, null, path.Count);
+                return FindPath(src, dst, null, path.Count).path;
             }
         }
 
-        public static Path FindPath(Switch src, Switch dst, Memo memo, int OspfLength) {
+        public static Path FindPath(Flow pre) {
+            var p = new Path(pre.Nodes);
+            if (p.MaxLoad == 0) {
+                return p;
+            }
+            else {
+                return FindPath(pre.IngressSwitch, pre.OutgressSwitch, null, p.Count).path;
+            }
+        }
+
+        public static (Path path, double load) FindPath(Switch src, Switch dst, Memo memo, int OspfLength) {
             // begin
             if (memo == null) {
                 memo = new Memo();
@@ -167,36 +177,54 @@ namespace Simulation {
             // end
             if (src == dst) {
                 var path = new Path(memo.Route);
-                if (path.MaxLoad < memo.Min) {
+                if (memo.MaxLoad < memo.ShortestPathLoad) {
                     memo.ShortestPath = path;
+                    memo.ShortestPathLoad = memo.MaxLoad;
                 }
-                return path;
+                return (path, memo.MaxLoad);
             }
 
             // inside
             Path shortest = null;
+            var shortestLoad = double.MaxValue;
             memo.Visited[src] = true;
             foreach (var sw in src.LinkedSwitches) {
+                //push
+                var oldLoad = memo.MaxLoad;
+                var newLoad = memo.Route.Last().LinkLoad[sw];
+                if (newLoad > memo.MaxLoad) {
+                    memo.MaxLoad = newLoad;
+                }
                 memo.Route.Add(sw);
+
+                // chop
                 if (memo.Route.Count > OspfLength + 4) {
                     goto pop;
                 }
-                if ( memo.Route.MaxLoad >= memo.Min || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
+                if (memo.MaxLoad >= memo.ShortestPathLoad || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
                     goto pop;
                 }
-                var path = FindPath(sw, dst, memo, OspfLength);
-                if (path == null) {
+
+                // recursive
+                var result = FindPath(sw, dst, memo, OspfLength);
+
+
+                // update
+                if (result.path == null) {
                     goto pop;
                 }
-                var min = shortest?.MaxLoad ?? double.MaxValue;
-                if (path.MaxLoad < min) {
-                    shortest = path;
+                if (result.load < shortestLoad) {
+                    shortest = result.path;
+                    shortestLoad = result.load;
                 }
+
+                // pop
                 pop:
+                memo.MaxLoad = oldLoad;
                 memo.Route.Pop();
             }
             memo.Visited[src] = false;
-            return shortest;
+            return (shortest, shortestLoad);
         }
     }
 }
