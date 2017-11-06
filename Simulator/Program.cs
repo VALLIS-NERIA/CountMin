@@ -14,11 +14,16 @@ using static Generator.Program;
 //using Tuple1=(System.Double, System.Double);
 
 namespace Simulator {
-    class Program {
+    using ElemType = Int64;
 
-        static List<Flow> ReRouteWithSketch (string topoJson, string flowJson,ISketch<Flow,long> sketch) {
+    class Program {
+        static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ISketch<Flow, ElemType> sketch) {
             var topo = LoadTopo(topoJson);
             var flowSet = LoadFlow(flowJson, topo);
+            return ReRouteWithSketch(topo, flowSet, sketch);
+        }
+
+        static List<Flow> ReRouteWithSketch(Topology topo, List<Flow> flowSet, ISketch<Flow, ElemType> sketch) {
             foreach (Flow flow in flowSet) {
                 sketch.Update(flow, (long) flow.Traffic);
             }
@@ -30,39 +35,59 @@ namespace Simulator {
             return newFlow;
         }
 
-        static Topology LoadTopo(string fileName) => JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology();
-        static List<Flow> LoadFlow(string fileName, Topology topo) => JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName)).ToCoflow(topo);
+        static Topology LoadTopo(string fileName)
+            => fileName.EndsWith(".json")
+                   ? JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology()
+                   : JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName + ".json")).ToTopology();
 
-        static void _Main() {
-            Directory.SetCurrentDirectory(@"..\..\..\data");
-            foreach (int k in new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000}) {
-                Topology topo = LoadTopo("hyperx5.json");
-                var flowSet = LoadFlow($"28_countmax_ospf_10000_{k}.json", topo);
-
-
-                //var cm = new CountMax<Flow, Switch>(k, 2);
-                //foreach (Flow flow in flowSet) {
-                //    flow.Assign();
-                //    cm.Update(flow, (ulong) flow.Traffic);
-                //}
-                //foreach (Flow flow in flowSet) {
-                //    flow.Traffic = cm.Query(flow);
-                //}
-                var json = flowSet.ToCoflowJson(topo);
-                string str = JsonConvert.SerializeObject(json);
-                using (var sw = new StreamWriter($"28_countmax_ospf_10000_{k}.json")) {
-                    sw.Write(str);
-                }
-            }
-        }
+        static List<Flow> LoadFlow(string fileName, Topology topo)
+            => fileName.EndsWith(".json")
+                   ? JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName)).ToCoflow(topo)
+                   : JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName + ".json")).ToCoflow(topo);
 
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
+            var k_list = new[] {10, 50, 100, 200, 400, 700, 1000, 2000, 4000, 7000, 10000};
+            var topo_list = new[] {"fattree6", "hyperx7"};
+            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath /*, Greedy.FindPath*/};
+            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
+            //var flow_count = 10000;
+
+            var taskList = new List<Task>();
+            foreach (RoutingAlgorithm algorithm in algo_list) {
+                foreach (string topos in topo_list) {
+                    foreach (var flow_count in count_list) {
+                        foreach (int k in k_list) {
+                            var topo = LoadTopo(topos + ".json");
+                            var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                            var flowSetIn = LoadFlow(fin + ".json", topo);
+                            var task =
+                                new Task(() =>
+                                {
+                                    var cm = new CountMax<Flow, Switch>(k, 2);
+                                    var fout = $"REROUTE_CountMax_k{k}_{fin}.json";
+                                    Console.WriteLine($"invoking {fin}");
+                                    var flowSetOut = ReRouteWithSketch(topo, flowSetIn, cm);
+                                    using (var sw = new StreamWriter(fout))
+                                        sw.WriteLine(JsonConvert.SerializeObject(flowSetOut.ToCoflowJson(topo)));
+                                    Console.WriteLine($"FINISHED {fout}");
+                                });
+                            taskList.Add(task);
+                            task.Start();
+                        }
+                    }
+                }
+            }
+            Task.WaitAll(taskList.ToArray());
+        }
+
+        static void _Main() {
+            Directory.SetCurrentDirectory(@"..\..\..\data");
             Console.WriteLine($"{"k",10}{"max",10},{"avg.",10}{"delta",10}");
-            foreach (int k in new[] {0,/*10, 25, 50, 100, 200, 400, 700, 1000, 2000*/}) {
-                Topology topo = LoadTopo("hyperx5.json");
-                var flowReal = LoadFlow("28_ospf_10w.json", topo);
-                var flowSet = LoadFlow($"28_countmax_greedy_10000_{k}.json", topo);
+            foreach (int k in new[] {10, 50}) {
+                Topology topo = LoadTopo("fattree6.json");
+                var flowReal = LoadFlow("zipf_20000_fattree6_OSPF.json", topo);
+                var flowSet = LoadFlow($"REROUTE_CountMax_k{k}_zipf_20000_fattree6_OSPF.json", topo);
                 double maxLoad = 0;
                 var iter0 = flowReal.GetEnumerator();
                 var iter = flowSet.GetEnumerator();
@@ -93,7 +118,7 @@ namespace Simulator {
             List<Flow> flowSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText("udp_ospf.json")).ToCoflow(topo);
             var cm = new Simulation.CountMax<Flow, Switch>(flowSet.Count / 200, 2);
             foreach (Flow flow in flowSet) {
-                cm.Update(flow, (ulong) flow.Traffic);
+                cm.Update(flow, (ElemType) flow.Traffic);
             }
 
             var list = new List<Tup>();

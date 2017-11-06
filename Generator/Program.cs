@@ -16,37 +16,99 @@ namespace Generator {
         static Topology LoadTopo(string fileName) => JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology();
         static List<Flow> LoadFlow(string fileName, Topology topo) => JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName)).ToCoflow(topo);
 
+        static void InitGen() {
+            var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
+            var topo_list = new[] {"fattree6", "hyperx7"};
+            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath, Greedy.FindPath};
+            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
+            //var flow_count = 10000;
+
+            var taskList = new List<Task>();
+            foreach (string topos in topo_list) {
+                foreach (RoutingAlgorithm algorithm in algo_list) {
+                    foreach (var flow_count in count_list) {
+                        var topo = LoadTopo(topos + ".json");
+                        var task =
+                            new Task(() =>
+                            {
+                                var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
+                                Console.WriteLine($"invoking {fn}");
+                                var flowSet = new List<Flow>();
+                                for (int i = 0; i < flow_count; ++i) {
+                                    flowSet.Add(GenerateRoute(topo, algorithm, Zipf.Sample(1, flow_count)));
+                                }
+                                using (var sw = new StreamWriter(fn))
+                                    sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
+                                Console.WriteLine($"FINISHED {fn}");
+                            });
+                        taskList.Add(task);
+                        task.Start();
+                    }
+                }
+            }
+            Task.WaitAll(taskList.ToArray());
+        }
+
         static void Main(string[] args) {
             Directory.SetCurrentDirectory(@"..\..\..\data");
-            //var topo = HyperXGen(5);
+            //var topo = FatTreeGen(6);
             //var tJ = topo.ToTopologyJson();
             //var json = JsonConvert.SerializeObject(tJ);
-            //using (var sw = new StreamWriter("hyperx5.json")) {
+            //using (var sw = new StreamWriter("fattree6.json")) {
             //    sw.Write(json);
             //}
-            //foreach (int k in new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000}) {
-                Topology topo = LoadTopo("hyperx5.json");
-                var flowSet = LoadFlow($"28_ospf_10w.json", topo);
+            var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
+            var topo_list = new[] {"fattree6", "hyperx7"};
+            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath, Greedy.FindPath};
+            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
+            //var flow_count = 10000;
 
-                ReRoute(flowSet, Greedy.FindPath);
-
-
-
-                //var cm = new CountMax<Flow, Switch>(k, 2);
-                //foreach (Flow flow in flowSet) {
-                //    flow.Assign();
-                //    cm.Update(flow, (ulong) flow.Traffic);
-                //}
-                //foreach (Flow flow in flowSet) {
-                //    flow.Traffic = cm.Query(flow);
-                //}
-                var json = flowSet.ToCoflowJson(topo);
-                string str = JsonConvert.SerializeObject(json);
-                using (var sw = new StreamWriter($"28_countmax_greedy_10000_{0}.json")) {
-                    sw.Write(str);
+            var taskList = new List<Task>();
+            foreach (string topos in topo_list) {
+                foreach (RoutingAlgorithm algorithm in algo_list) {
+                    foreach (var flow_count in count_list) {
+                        var topo = LoadTopo(topos+".json");
+                        var task =
+                            new Task(() =>
+                            {
+                                var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
+                                Console.WriteLine($"invoking {fn}");
+                                var flowSet = new List<Flow>();
+                                for (int i = 0; i < flow_count; ++i) {
+                                    flowSet.Add(GenerateRoute(topo, algorithm, Zipf.Sample(1, flow_count)));
+                                }
+                                using (var sw = new StreamWriter(fn))
+                                    sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
+                                Console.WriteLine($"FINISHED {fn}");
+                            });
+                        taskList.Add(task);
+                        task.Start();
+                    }
                 }
-                Console.WriteLine();
-            //}
+            }
+            Task.WaitAll(taskList.ToArray());
+            ////foreach (int k in new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000}) {
+            //    Topology topo = LoadTopo("hyperx5.json");
+            //    var flowSet = LoadFlow($"28_ospf_10w.json", topo);
+
+            //    ReRoute(flowSet, Greedy.FindPath);
+
+
+            //    //var cm = new CountMax<Flow, Switch>(k, 2);
+            //    //foreach (Flow flow in flowSet) {
+            //    //    flow.Assign();
+            //    //    cm.Update(flow, (ulong) flow.Traffic);
+            //    //}
+            //    //foreach (Flow flow in flowSet) {
+            //    //    flow.Traffic = cm.Query(flow);
+            //    //}
+            //    var json = flowSet.ToCoflowJson(topo);
+            //    string str = JsonConvert.SerializeObject(json);
+            //    using (var sw = new StreamWriter($"28_countmax_greedy_10000_{0}.json")) {
+            //        sw.Write(str);
+            //    }
+            //    Console.WriteLine();
+            ////}
             ;
             //var flowSet1 = new List<Flow>();
             //var flowSet2 = new List<Flow>();
