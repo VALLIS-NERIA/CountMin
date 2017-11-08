@@ -9,7 +9,7 @@ namespace Simulation {
     public class Path : List<Switch> {
         // maximum link load in this route
         public double MaxLoad {
-            get => GetMaxLoad() + base.Count * 0.1;
+            get => GetMaxLoad();
         }
 
         public new void Add(Switch sw) {
@@ -146,7 +146,6 @@ namespace Simulation {
             }
         }
 
-
         public static Path FindPath(Switch src, Switch dst) {
             var path = OSPF.FindPath(src, dst, null);
             if (path.MaxLoad == 0) {
@@ -177,7 +176,8 @@ namespace Simulation {
             // end
             if (src == dst) {
                 var path = new Path(memo.Route);
-                if (memo.MaxLoad < memo.ShortestPathLoad) {
+                if (memo.MaxLoad < memo.ShortestPathLoad
+                    || (memo.MaxLoad == memo.ShortestPathLoad && memo.Route.Count < memo.ShortestPath.Count)) {
                     memo.ShortestPath = path;
                     memo.ShortestPathLoad = memo.MaxLoad;
                 }
@@ -204,7 +204,9 @@ namespace Simulation {
                 if (memo.MaxLoad >= memo.ShortestPathLoad || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
                     goto pop;
                 }
-
+                if (memo.MaxLoad == memo.ShortestPathLoad && memo.Route.Count > memo.ShortestPath.Count) {
+                    goto pop;
+                }
                 // recursive
                 var result = FindPath(sw, dst, memo, OspfLength);
 
@@ -213,7 +215,8 @@ namespace Simulation {
                 if (result.path == null) {
                     goto pop;
                 }
-                if (result.load < shortestLoad) {
+                if (result.load < shortestLoad
+                    || (result.load == shortestLoad && result.path.Count < shortest.Count)) {
                     shortest = result.path;
                     shortestLoad = result.load;
                 }
@@ -225,6 +228,63 @@ namespace Simulation {
             }
             memo.Visited[src] = false;
             return (shortest, shortestLoad);
+        }
+
+        public static Path FindPathOld(Switch src, Switch dst) {
+            var path = OSPF.FindPath(src, dst, null);
+            if (path.MaxLoad == 0) {
+                return path;
+            }
+            else {
+                return FindPathOld(src, dst, null, path.Count);
+            }
+        }
+
+        public static Path FindPathOld(Switch src, Switch dst, Memo memo, int OspfLength) {
+            // begin
+            if (memo == null) {
+                memo = new Memo();
+                memo.Route.Add(src);
+            }
+
+            // end
+            if (src == dst) {
+                var path = new Path(memo.Route);
+                if (path.MaxLoad < memo.ShortestPathLoad
+                    || (path.MaxLoad == memo.ShortestPathLoad && path.Count < memo.ShortestPath.Count)) {
+                    memo.ShortestPath = path;
+                }
+                return path;
+            }
+
+            // inside
+            Path shortest = null;
+            memo.Visited[src] = true;
+            foreach (var sw in src.LinkedSwitches) {
+                memo.Route.Add(sw);
+                if (memo.Route.Count > OspfLength + 4) {
+                    goto pop;
+                }
+                if (memo.Route.MaxLoad >= memo.ShortestPathLoad
+                    || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
+                    goto pop;
+                }
+                if (memo.Route.MaxLoad == memo.ShortestPathLoad && memo.Route.Count > memo.ShortestPath.Count) {
+                    goto pop;
+                }
+                var path = FindPathOld(sw, dst, memo, OspfLength);
+                if (path == null) {
+                    goto pop;
+                }
+                var min = shortest?.MaxLoad ?? double.MaxValue;
+                if (path.MaxLoad < min) {
+                    shortest = path;
+                }
+                pop:
+                memo.Route.Pop();
+            }
+            memo.Visited[src] = false;
+            return shortest;
         }
     }
 }

@@ -49,7 +49,28 @@ namespace Generator {
             Task.WaitAll(taskList.ToArray());
         }
 
-        static void Main(string[] args) {
+
+        static void Main() {
+            Directory.SetCurrentDirectory(@"..\..\..\data");
+            var topo = LoadTopo("fattree6.json");
+            var flow0 = LoadFlow("zipf_10000_fattree6_OSPF.json", topo);
+            int i = 1;
+            foreach (Flow flow in flow0) {
+                // DO NOT REROUTE BLANK FLOWS
+                if (flow.Traffic == 0) {
+                    continue;
+                }
+                var src = flow.IngressSwitch;
+                var dst = flow.OutgressSwitch;
+                flow.OverrideAssign(Greedy.FindPathOld(flow.IngressSwitch, flow.OutgressSwitch));
+                Console.Write($"\r{i++}");
+            }
+            using (var sw = new StreamWriter("greedyold.json")) {
+                sw.Write(JsonConvert.SerializeObject(flow0.ToCoflowJson(topo)));
+            }
+        }
+
+        static void __Main(string[] args) {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //var topo = FatTreeGen(6);
             //var tJ = topo.ToTopologyJson();
@@ -171,7 +192,7 @@ namespace Generator {
         }
 
         public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo) {
-            int i = 1;
+            //int i = 1;
             foreach (Flow flow in flowSet) {
                 // DO NOT REROUTE BLANK FLOWS
                 if (flow.Traffic == 0) {
@@ -180,7 +201,7 @@ namespace Generator {
                 var src = flow.IngressSwitch;
                 var dst = flow.OutgressSwitch;
                 flow.OverrideAssign(algo(src, dst));
-                Console.Write($"\r{i++}");
+                //Console.Write($"\r{i++}");
             }
         }
 
