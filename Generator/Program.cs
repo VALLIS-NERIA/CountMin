@@ -19,9 +19,8 @@ namespace Generator {
         static void InitGen() {
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath, Greedy.FindPath};
+            var algo_list = new RoutingAlgorithm[] { Greedy.FindPath};
             var count_list = new[] {10000, 20000, 30000, 40000, 50000};
-            //var flow_count = 10000;
 
             var taskList = new List<Task>();
             foreach (string topos in topo_list) {
@@ -31,11 +30,16 @@ namespace Generator {
                         var task =
                             new Task(() =>
                             {
+                                var fold= $"zipf_{flow_count}_{topos}_OSPF.json";
                                 var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
+                                var flowOld = LoadFlow(fold, topo);
+                                //var traffics =( from flow in flowOld select flow.Traffic).ToList();
                                 Console.WriteLine($"invoking {fn}");
                                 var flowSet = new List<Flow>();
                                 for (int i = 0; i < flow_count; ++i) {
-                                    flowSet.Add(GenerateRoute(topo, algorithm, Zipf.Sample(1, flow_count)));
+                                    var f = ReRoute(flowOld[i], algorithm);
+                                    f.Assign();
+                                    flowSet.Add(f);
                                 }
                                 using (var sw = new StreamWriter(fn))
                                     sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
@@ -52,22 +56,7 @@ namespace Generator {
 
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
-            var topo = LoadTopo("fattree6.json");
-            var flow0 = LoadFlow("zipf_10000_fattree6_OSPF.json", topo);
-            int i = 1;
-            foreach (Flow flow in flow0) {
-                // DO NOT REROUTE BLANK FLOWS
-                if (flow.Traffic == 0) {
-                    continue;
-                }
-                var src = flow.IngressSwitch;
-                var dst = flow.OutgressSwitch;
-                flow.OverrideAssign(Greedy.FindPathOld(flow.IngressSwitch, flow.OutgressSwitch));
-                Console.Write($"\r{i++}");
-            }
-            using (var sw = new StreamWriter("greedyold.json")) {
-                sw.Write(JsonConvert.SerializeObject(flow0.ToCoflowJson(topo)));
-            }
+            InitGen();
         }
 
         static void __Main(string[] args) {
@@ -108,81 +97,7 @@ namespace Generator {
                 }
             }
             Task.WaitAll(taskList.ToArray());
-            ////foreach (int k in new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000}) {
-            //    Topology topo = LoadTopo("hyperx5.json");
-            //    var flowSet = LoadFlow($"28_ospf_10w.json", topo);
 
-            //    ReRoute(flowSet, Greedy.FindPath);
-
-
-            //    //var cm = new CountMax<Flow, Switch>(k, 2);
-            //    //foreach (Flow flow in flowSet) {
-            //    //    flow.Assign();
-            //    //    cm.Update(flow, (ulong) flow.Traffic);
-            //    //}
-            //    //foreach (Flow flow in flowSet) {
-            //    //    flow.Traffic = cm.Query(flow);
-            //    //}
-            //    var json = flowSet.ToCoflowJson(topo);
-            //    string str = JsonConvert.SerializeObject(json);
-            //    using (var sw = new StreamWriter($"28_countmax_greedy_10000_{0}.json")) {
-            //        sw.Write(str);
-            //    }
-            //    Console.WriteLine();
-            ////}
-            ;
-            //var flowSet1 = new List<Flow>();
-            //var flowSet2 = new List<Flow>();
-            //int c = 10000;
-            //Random rnd = new Random();
-            //while (c-- > 0) {
-            //    Flow flow1 = GenerateRoute(topo, OSPF.FindPath, rnd.NextDouble() < 0.2 ? 16 : 1);
-            //    //flow1.Assign();
-            //    flowSet1.Add(flow1);
-            //    Console.Write($"\r{c}");
-            //}
-            //foreach (Flow flow1 in flowSet1.OrderByDescending(f => f.Traffic)) {
-            //    var flow2 = ReRoute(flow1, Greedy.FindPath);
-            //    flowSet2.Add(flow2);
-            //    flow2.Assign();
-            //    Console.Write($"\r{c++}");
-            //}
-
-            ////var flowSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText("udp_ospf.json")).ToCoflow(topo);
-            ////ReRoute(flowSet, Greedy.FindPath);
-            //var json = flowSet1.ToCoflowJson(topo);
-            //string str = JsonConvert.SerializeObject(json);
-            //using (var sw = new StreamWriter($"28_ospf_10w.json")) {
-            //    sw.Write(str);
-            //}
-
-            //json = flowSet2.ToCoflowJson(topo);
-            //str = JsonConvert.SerializeObject(json);
-            //using (var sw = new StreamWriter($"28_greedy_10w.json")) {
-            //    sw.Write(str);
-            //}
-
-
-            //foreach (var t in new[] {0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}) {
-            //var sr = new StreamReader("udp new.txt");
-            //var flowSet = new List<Flow>();
-            //while (!sr.EndOfStream) {
-            //    double traffic;
-            //    try {
-            //        traffic = int.Parse(sr.ReadLine());
-            //        for (int i = 9; i > 0; i--) {
-            //            sr.ReadLine();
-            //        }
-            //    }
-            //    catch {
-            //        continue;
-            //    }
-            //    Flow f = GenerateRoute(topo, OSPF.FindPath, traffic);
-            //    while (f == null) {
-            //        f = GenerateRoute(topo, OSPF.FindPath, traffic);
-            //    }
-            //    flowSet.Add(f);
-            //}
         }
 
         public static Flow ReRoute(Flow flow, RoutingAlgorithm algo) {
@@ -191,17 +106,35 @@ namespace Generator {
             return new Flow(algo(src, dst)) {Traffic = flow.Traffic};
         }
 
-        public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo) {
+        public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo,int count=0) {
             //int i = 1;
-            foreach (Flow flow in flowSet) {
-                // DO NOT REROUTE BLANK FLOWS
-                if (flow.Traffic == 0) {
-                    continue;
+            if (count == 0) {
+                foreach (Flow flow in flowSet) {
+                    // DO NOT REROUTE BLANK FLOWS
+                    if (flow.Traffic == 0) {
+                        continue;
+                    }
+                    var src = flow.IngressSwitch;
+                    var dst = flow.OutgressSwitch;
+                    flow.OverrideAssign(algo(src, dst));
+                    //Console.Write($"\r{i++}");
                 }
-                var src = flow.IngressSwitch;
-                var dst = flow.OutgressSwitch;
-                flow.OverrideAssign(algo(src, dst));
-                //Console.Write($"\r{i++}");
+            }
+            else {
+                int i = 1;
+                foreach (Flow flow in flowSet) {
+                    // DO NOT REROUTE BLANK FLOWS
+                    if (flow.Traffic == 0) {
+                        continue;
+                    }
+                    var src = flow.IngressSwitch;
+                    var dst = flow.OutgressSwitch;
+                    flow.OverrideAssign(algo(src, dst));
+                    if (++i > count) {
+                        break;
+                    }
+                    //Console.Write($"\r{i++}");
+                }
             }
         }
 

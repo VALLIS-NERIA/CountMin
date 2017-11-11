@@ -201,7 +201,7 @@ namespace Simulation {
                 if (memo.Route.Count > OspfLength + 4) {
                     goto pop;
                 }
-                if (memo.MaxLoad >= memo.ShortestPathLoad || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
+                if (memo.MaxLoad > memo.ShortestPathLoad || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
                     goto pop;
                 }
                 if (memo.MaxLoad == memo.ShortestPathLoad && memo.Route.Count > memo.ShortestPath.Count) {

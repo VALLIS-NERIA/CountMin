@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,6 +10,7 @@ using MathNet.Numerics.Statistics;
 using Newtonsoft.Json;
 using Simulation;
 using static Generator.Program;
+using Switch = Simulation.Switch;
 
 //using Tuple1=(System.Double, System.Double);
 
@@ -16,7 +18,13 @@ namespace Simulator {
     using Tup = System.ValueTuple<double, double>;
     using ElemType = Int64;
 
-    class Program {
+    static class Program {
+        static int[] k_list = {10, 50, 100, 200, 400, 700, 1000, 2000, 4000, 7000, 10000, 50000};
+        static string[] topo_list = {"fattree6", "hyperx7"};
+        static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
+        static int[] count_list = {10000, 20000, 30000, 40000, 50000};
+
+
         static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ISketch<Flow, ElemType> sketch) {
             var topo = LoadTopo(topoJson);
             var flowSet = LoadFlow(flowJson, topo);
@@ -35,17 +43,8 @@ namespace Simulator {
             return newFlow;
         }
 
-
         static void SVReroute() {
-            var k_list = new[] {10, 50, 100, 200, 400, 700, 1000, 2000, 4000, 7000, 10000};
-            var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath /*, Greedy.FindPath*/};
-            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
-#if DEBUG
-            Console.WriteLine("DEBUG:");
-#endif
             var taskList = new List<Task>();
-            //Console.WriteLine($"{"topology",10}{"flowcount",10}{"k",10}{"sv_k",10},{"CountMax",15}{"SketchVisor",15}");
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
@@ -71,24 +70,85 @@ namespace Simulator {
                 }
             }
             Task.WaitAll(taskList.ToArray());
+            Console.WriteLine("SVReroute done.");
         }
 
-        private static void BenchMark() {
-            var k_list = new[] {0 /*,10, 50, 100, 200, 400, 700, 1000, 2000, 4000, 7000, 10000*/};
-            var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath /*, Greedy.FindPath*/};
-            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
-            //var flow_count = 10000;
-
-            Console.WriteLine($"{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
+        static void CMReroute() {
             var taskList = new List<Task>();
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
                         foreach (int k in k_list) {
+                            void _do() {
+                                var topo = LoadTopo(topos + ".json");
+                                var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                                var fout = $"REROUTE_CountMax_k{k}_{fin}.json";
+                                var flowSet = LoadFlow(fin, topo);
+                                var newFlow = ReRouteWithSketch(topo, flowSet, new CountMax<Flow, Switch>(k));
+                                using (var sw = new StreamWriter(fout)) {
+                                    sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
+                                }
+                                Console.WriteLine(fout);
+                            }
+
+                            var task = new Task(_do);
+                            task.Start();
+                            taskList.Add(task);
+                        }
+                    }
+                }
+            }
+            Task.WaitAll(taskList.ToArray());
+            Console.WriteLine("CMReroute done.");
+        }
+
+        static void PartialReroute() {
+            var taskList = new List<Task>();
+            foreach (RoutingAlgorithm algorithm in algo_list) {
+                foreach (string topos in topo_list) {
+                    foreach (var flow_count in count_list) {
+                        foreach (int k in k_list) {
+                            void _do() {
+                                try {
+                                    var topo = LoadTopo(topos + ".json");
+                                    var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                                    var fout = $"REROUTE_Original_k{k}_{fin}.json";
+                                    var flowSet = LoadFlow(fin, topo);
+                                    var flowSet1 = flowSet.OrderByDescending(f => f.Traffic).ToList();
+                                    ReRoute(flowSet1, Greedy.FindPath, k);
+                                    using (var sw = new StreamWriter(fout)) {
+                                        sw.WriteLine(JsonConvert.SerializeObject(flowSet1.ToCoflowJson(topo)));
+                                    }
+                                    Console.WriteLine(fout);
+                                }
+                                catch (Exception ex) {
+                                    Debug.WriteLine(ex.Message);
+                                }
+                            }
+
+                            //_do();
+                            var task = new Task(_do);
+                            task.Start();
+                            taskList.Add(task);
+                        }
+                    }
+                }
+            }
+            Task.WaitAll(taskList.ToArray());
+        }
+
+        private static void BenchMark(string name = "SketchVisor",bool head=true) {
+            if (head) {
+                Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
+            }
+            var taskList = new List<Task>();
+            foreach (RoutingAlgorithm algorithm in algo_list) {
+                foreach (string topos in topo_list) {
+                    foreach (var flow_count in count_list) {
+                        foreach (int k in new []{0}.Concat(k_list)) {
                             var topo = LoadTopo(topos + ".json");
                             var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
-                            var fout = $"REROUTE_SketchVisor_k{k}_{fin}.json";
+                            var fout = $"REROUTE_{name}_k{k}_{fin}.json";
                             var flowReal = LoadFlow(fin, topo);
                             var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
 
@@ -111,7 +171,7 @@ namespace Simulator {
                                         }
                                     }
                                     var load = from sw in topo.FetchLinkLoad() select sw.Value;
-                                    Console.WriteLine($"{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
+                                    Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
                                 });
                             taskList.Add(task);
                             task.Start();
@@ -120,17 +180,9 @@ namespace Simulator {
                 }
             }
             Task.WaitAll(taskList.ToArray());
-            Console.Read();
         }
 
         static void SketchCompareTime() {
-            var k_list = new[] {10, 50, 100, 200, 400, 700, 1000, 2000, 4000, 7000, 10000};
-            var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath /*, Greedy.FindPath*/};
-            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
-#if DEBUG
-            Console.WriteLine("DEBUG:");
-#endif
             Console.WriteLine($"{"topology",10}{"flowcount",10}{"k",10}{"sv_k",10},{"CountMax",15}{"SketchVisor",15}");
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
@@ -159,19 +211,10 @@ namespace Simulator {
                     }
                 }
             }
-            Console.ReadKey();
         }
 
         static void SketchCompareAppr() {
-            var k_list = new[] {10, 50, 100, 200, 400, 700, 1000, 2000, 4000, 7000, 10000};
-            var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath /*, Greedy.FindPath*/};
-            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
-#if DEBUG
-            Console.WriteLine("DEBUG:");
-#endif
             var taskList = new List<Task>();
-            //Console.WriteLine($"{"topology",10}{"flowcount",10}{"k",10}{"sv_k",10},{"CountMax",15}{"SketchVisor",15}");
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
@@ -264,11 +307,46 @@ namespace Simulator {
 
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
-            //SketchCompareAppr();
+            //CMReroute();
             //SVReroute();
-            BenchMark();
+            //SketchCompareAppr();
+            //PartialReroute();
+            BenchMark("Original");
+            BenchMark("CountMax",false);
+            BenchMark("SketchVisor",false);
+
             Console.WriteLine("Done.");
             Console.ReadKey();
+        }
+
+        private static void BenchmarkGreedy() {
+            Console.WriteLine($"{"topology",10}{"flow_count",10}{"max",15},{"avg.",15}{"delta",15}");
+            var taskList = new List<Task>();
+            foreach (RoutingAlgorithm algorithm in algo_list) {
+                foreach (string topos in topo_list) {
+                    foreach (var flow_count in count_list) {
+                        //foreach (int k in k_list) {
+                        var topo = LoadTopo(topos + ".json");
+                        var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                        var flowReal = LoadFlow(fin, topo);
+
+                        var task =
+                            new Task(() =>
+                            {
+                                double maxLoad = 0;
+                                foreach (Flow flow in flowReal) {
+                                    flow.Assign();
+                                }
+                                var load = from sw in topo.FetchLinkLoad() select sw.Value;
+                                Console.WriteLine($"{topos,10}{flow_count,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
+                            });
+                        taskList.Add(task);
+                        task.Start();
+                        //}
+                    }
+                }
+            }
+            Task.WaitAll(taskList.ToArray());
         }
 
 
