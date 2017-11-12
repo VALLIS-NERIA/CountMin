@@ -1,0 +1,7 @@
+set terminal png
+call "draw_appr.txt" "40000_0.9" "700_0.9" "ft"
+call "draw_appr.txt" "40000_0.9" "700_0.9" "hy"
+call "draw_appr.txt" "40000_0.99" "700_0.99" "ft"
+call "draw_appr.txt" "40000_0.99" "700_0.99" "hy"
+call "draw_load.txt" "40000" "700" "ft"
+call "draw_load.txt" "40000" "700" "hy"

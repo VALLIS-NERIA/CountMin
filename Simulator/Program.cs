@@ -137,7 +137,7 @@ namespace Simulator {
             Task.WaitAll(taskList.ToArray());
         }
 
-        private static void BenchMark(string name = "SketchVisor",bool head=true) {
+        private static void BenchMark(string name = "SketchVisor", bool head = true) {
             if (head) {
                 Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
             }
@@ -145,7 +145,7 @@ namespace Simulator {
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
-                        foreach (int k in new []{0}.Concat(k_list)) {
+                        foreach (int k in new[] {0}.Concat(k_list)) {
                             var topo = LoadTopo(topos + ".json");
                             var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
                             var fout = $"REROUTE_{name}_k{k}_{fin}.json";
@@ -295,6 +295,47 @@ namespace Simulator {
             Task.WaitAll(taskList.ToArray());
         }
 
+        static void SketchAppr() {
+            var taskList = new List<Task>();
+            var sw = new StreamWriter("analysisAll.csv");
+            foreach (RoutingAlgorithm algorithm in algo_list) {
+                foreach (string topos in topo_list) {
+                    foreach (var flow_count in count_list) {
+                        foreach (int k in k_list) {
+                            var topo = LoadTopo(topos + ".json");
+                            var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                            //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
+                            Console.WriteLine($"{flow_count} in {topos} initing");
+
+
+                            using (var sr = new StreamReader($"analysis/analysis_CountMax_{k}_{flow_count}_{topos}.csv")) {
+                                sr.ReadLine();
+                                while (!sr.EndOfStream) {
+                                    sw.WriteLine($"{"CountMax"} ,{topos} ,{flow_count} , {k} ,  {sr.ReadLine()}");
+                                }
+                            }
+
+
+                            using (var sr = new StreamReader($"analysis/analysis_SketchVisor_{(int) (k * 1.2)}_{flow_count}_{topos}.csv")) {
+                                sr.ReadLine();
+                                while (!sr.EndOfStream) {
+                                    sw.WriteLine($"{"SketchVisor"} ,{topos} ,{flow_count} , {k} ,  {sr.ReadLine()}");
+                                }
+                            }
+                            Console.WriteLine($"-----------{flow_count} in {topos} finished!-----------");
+
+
+                            //var task = new Task(_do);
+                            //task.Start();
+                            //taskList.Add(task);
+                        }
+                    }
+                }
+            }
+            sw.Close();
+            //Task.WaitAll(taskList.ToArray());
+        }
+
         static Topology LoadTopo(string fileName)
             => fileName.EndsWith(".json")
                    ? JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology()
@@ -307,16 +348,20 @@ namespace Simulator {
 
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
+#if DEBUG
+            Console.WriteLine("--DEBUG--");
+#endif
             //CMReroute();
             //SVReroute();
             //SketchCompareAppr();
             //PartialReroute();
-            BenchMark("Original");
-            BenchMark("CountMax",false);
-            BenchMark("SketchVisor",false);
-
+            //BenchMark("Original");
+            //BenchMark("CountMax", false);
+            //BenchMark("SketchVisor", false);
+            //SketchAppr();
+            SketchCompareTime();
             Console.WriteLine("Done.");
-            Console.ReadKey();
+            Console.ReadLine();
         }
 
         private static void BenchmarkGreedy() {

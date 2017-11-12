@@ -1,0 +1,36 @@
+KPARA = ARG1
+FPARA = ARG2
+TOPO = ARG3
+OUTDIR = "./fig/"
+SUBFIX = ".png"
+#reset
+
+set key right top
+
+set yrange[0:1.2]
+set ytics ("0" 0, "0.5" 0.5, "0.9" 0.9, "1" 1)
+set xrange[0:12000]
+set xtics ("0" 0, "400" 400, "700" 700, "1000" 1000, "2000" 2000, "4000" 4000, "7000" 7000, "10000" 10000)
+
+set xl 'k'
+set yl 'Maximum Link Load (Relative)'
+
+FILE = "./".TOPO."_k_load_".KPARA.".txt"
+set output OUTDIR.TOPO."_k_load_".KPARA.SUBFIX
+
+plot \
+FILE u 1:($2/$4) with linespoints title 'CountMax',\
+FILE u 1:($3/$4) with linespoints title 'SketchVisor'
+
+set xrange[5000:55000]
+set xtics ("10000" 10000, "20000" 20000, "30000" 30000, "40000" 40000, "50000" 50000)
+
+set xl 'Flow Number'
+
+FILE = "./".TOPO."_flow_load_".FPARA.".txt"
+set output OUTDIR.TOPO."_flow_load_".FPARA.SUBFIX
+
+plot \
+FILE u 1:($2/$4) with linespoints title 'CountMax',\
+FILE u 1:($3/$4) with linespoints title 'SketchVisor'
+
