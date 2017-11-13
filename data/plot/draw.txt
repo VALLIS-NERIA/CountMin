@@ -1,7 +1,10 @@
-set terminal png
-call "draw_appr.txt" "40000_0.9" "700_0.9" "ft"
-call "draw_appr.txt" "40000_0.9" "700_0.9" "hy"
-call "draw_appr.txt" "40000_0.99" "700_0.99" "ft"
-call "draw_appr.txt" "40000_0.99" "700_0.99" "hy"
+set size 0.6,0.6
+set terminal postscript eps enhanced "NimbusSanL-Regu" fontfile "uhvr8a.pfb" 22
+call "draw_appr.txt" "40000_09" "700_09" "ft"
+call "draw_appr.txt" "40000_09" "700_09" "hy"
+call "draw_appr.txt" "40000_099" "700_099" "ft"
+call "draw_appr.txt" "40000_099" "700_099" "hy"
 call "draw_load.txt" "40000" "700" "ft"
 call "draw_load.txt" "40000" "700" "hy"
+call "draw_time.txt" "40000" "700" "ft"
+call "draw_time.txt" "40000" "700" "hy"

@@ -54,12 +54,16 @@ namespace Generator {
         }
 
 
-        static void Main() {
+        static void MMain() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
-            InitGen();
+            //InitGen();
+            var hy = HyperXGen(9);
+            using (var sw = new StreamWriter("hyperx9.json")) {
+                sw.Write(JsonConvert.SerializeObject(hy.ToTopologyJson()));
+            }
         }
 
-        static void __Main(string[] args) {
+        static void Main(string[] args) {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //var topo = FatTreeGen(6);
             //var tJ = topo.ToTopologyJson();
@@ -69,8 +73,8 @@ namespace Generator {
             //}
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath, Greedy.FindPath};
-            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
+            var algo_list = new RoutingAlgorithm[] {OSPF.FindPath};
+            var count_list = new[] {100000, 200000, 300000, 400000, 500000};
             //var flow_count = 10000;
 
             var taskList = new List<Task>();
@@ -78,21 +82,23 @@ namespace Generator {
                 foreach (RoutingAlgorithm algorithm in algo_list) {
                     foreach (var flow_count in count_list) {
                         var topo = LoadTopo(topos+".json");
+                        void _do() {
+                            var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
+                            Console.WriteLine($"invoking {fn}");
+                            var flowSet = new List<Flow>();
+                            for (int i = 0; i < flow_count; ++i) {
+                                flowSet.Add(GenerateRoute(topo, algorithm, Zipf.Sample(1, flow_count)));
+                                Console.Write($"\r{i}");
+                            }
+                            using (var sw = new StreamWriter(fn))
+                                sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
+                            Console.WriteLine($"FINISHED {fn}");
+                        }
                         var task =
-                            new Task(() =>
-                            {
-                                var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
-                                Console.WriteLine($"invoking {fn}");
-                                var flowSet = new List<Flow>();
-                                for (int i = 0; i < flow_count; ++i) {
-                                    flowSet.Add(GenerateRoute(topo, algorithm, Zipf.Sample(1, flow_count)));
-                                }
-                                using (var sw = new StreamWriter(fn))
-                                    sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
-                                Console.WriteLine($"FINISHED {fn}");
-                            });
+                            new Task(_do);
+                        _do();
                         taskList.Add(task);
-                        task.Start();
+                        //task.Start();
                     }
                 }
             }

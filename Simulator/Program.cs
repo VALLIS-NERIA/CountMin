@@ -360,8 +360,13 @@ namespace Simulator {
             //BenchMark("SketchVisor", false);
             //SketchAppr();
             SketchCompareTime();
-            Console.WriteLine("Done.");
-            Console.ReadLine();
+            Console.WriteLine("Press Q to exit.");
+            while (true) {
+                var c = Console.ReadKey();
+                if (c.Key == ConsoleKey.Q) {
+                    Environment.Exit(0);
+                }
+            }
         }
 
         private static void BenchmarkGreedy() {

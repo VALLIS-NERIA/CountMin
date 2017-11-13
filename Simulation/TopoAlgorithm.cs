@@ -88,9 +88,15 @@ namespace Simulation {
             }
         }
 
+        private static Dictionary<(Switch src, Switch dst),Path> known = new Dictionary<(Switch src, Switch dst), Path>();
+
         public static Path FindPath(Switch src, Switch dst) { return FindPath(src, dst, null); }
 
-        public static Path FindPath(Switch src, Switch dst, Memo memo) {
+        public static Path FindPath(Switch src, Switch dst, Memo memo,int maxLength=15) {
+            if (known.ContainsKey((src, dst))) {
+                return known[(src, dst)];
+            }
+
             // begin
             if (memo == null) {
                 memo = new Memo();
@@ -102,6 +108,7 @@ namespace Simulation {
                 var path = new Path(memo.Route);
                 if (path.Count < memo.Min) {
                     memo.ShortestPath = path;
+                    known[(src, dst)] = path;
                 }
                 return path;
             }
@@ -112,6 +119,9 @@ namespace Simulation {
             foreach (var sw in src.LinkedSwitches) {
                 memo.Route.Add(sw);
                 if (memo.Route.Count > memo.Min || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
+                    goto pop;
+                }
+                if (memo.Route.Count > maxLength) {
                     goto pop;
                 }
                 var path = FindPath(sw, dst, memo);
