@@ -368,12 +368,12 @@ namespace Simulator {
             Console.WriteLine("--DEBUG--");
 #endif
             IEnumerable<Task> taskList = new List<Task>();
-            CMReroute();
+            //CMReroute();
             //SVReroute();
             //var taskArray=SketchCompareAppr();
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));
-            taskList = taskList.Concat(BenchMark("CountMax", false));
+            //taskList = taskList.Concat(BenchMark("CountMax", false));
             taskList = taskList.Concat(BenchMark("SketchVisor", false));
             //SketchAppr();
             //SketchCompareTime();
