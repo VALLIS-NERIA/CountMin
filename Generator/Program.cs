@@ -123,11 +123,13 @@ namespace Generator {
             return new Flow(algo(src, dst)) {Traffic = flow.Traffic};
         }
 
+        public static int Counter;
         public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo, int count = 0) {
             //int i = 1;
             if (count == 0) {
                 foreach (Flow flow in flowSet) {
                     // DO NOT REROUTE BLANK FLOWS
+                    ++Counter;
                     if (flow.Traffic == 0) {
                         continue;
                     }
@@ -141,6 +143,7 @@ namespace Generator {
                 int i = 1;
                 foreach (Flow flow in flowSet) {
                     // DO NOT REROUTE BLANK FLOWS
+                    ++Counter;
                     if (flow.Traffic == 0) {
                         continue;
                     }

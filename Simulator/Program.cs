@@ -77,16 +77,22 @@ namespace Simulator {
             Console.WriteLine("SVReroute done.");
         }
 
-        static void CMReroute() {
+        static Task[] CMReroute() {
             var taskList = new List<Task>();
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
                         foreach (int k in k_list) {
+
+
                             void _do() {
-                                var topo = LoadTopo(topos + ".json");
                                 var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
                                 var fout = $"REROUTE_CountMax_k{k}_{fin}.json";
+                                if (File.Exists(fout)) {
+                                    Console.WriteLine($"{fout} already exists.");
+                                    return;
+                                }
+                                var topo = LoadTopo(topos + ".json");
                                 var flowSet = LoadFlow(fin, topo);
                                 var newFlow = ReRouteWithSketch(topo, flowSet, new CountMax<Flow, Switch>(k));
                                 using (var sw = new StreamWriter(fout)) {
@@ -96,14 +102,12 @@ namespace Simulator {
                             }
 
                             var task = new Task(_do);
-                            task.Start();
                             taskList.Add(task);
                         }
                     }
                 }
             }
-            Task.WaitAll(taskList.ToArray());
-            Console.WriteLine("CMReroute done.");
+            return taskList.ToArray();
         }
 
         static void PartialReroute() {
@@ -157,26 +161,25 @@ namespace Simulator {
                             var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
 
                             var task =
-                                new Task(() =>
-                                {
-                                    double maxLoad = 0;
-                                    var iter0 = flowReal.GetEnumerator();
-                                    var iter = flowSet.GetEnumerator();
-                                    iter.MoveNext();
-                                    iter0.MoveNext();
-                                    while (true) {
-                                        var flow0 = iter0.Current;
-                                        var flow = iter.Current;
-                                        flow.Traffic = flow0.Traffic;
-                                        flow.Assign();
-                                        if (!iter.MoveNext() ||
-                                            !iter0.MoveNext()) {
-                                            break;
-                                        }
-                                    }
-                                    var load = from sw in topo.FetchLinkLoad() select sw.Value;
-                                    Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
-                                });
+                                new Task(() => {
+                                             double maxLoad = 0;
+                                             var iter0 = flowReal.GetEnumerator();
+                                             var iter = flowSet.GetEnumerator();
+                                             iter.MoveNext();
+                                             iter0.MoveNext();
+                                             while (true) {
+                                                 var flow0 = iter0.Current;
+                                                 var flow = iter.Current;
+                                                 flow.Traffic = flow0.Traffic;
+                                                 flow.Assign();
+                                                 if (!iter.MoveNext() ||
+                                                     !iter0.MoveNext()) {
+                                                     break;
+                                                 }
+                                             }
+                                             var load = from sw in topo.FetchLinkLoad() select sw.Value;
+                                             Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
+                                         });
                             taskList.Add(task);
                         }
                     }
@@ -368,25 +371,28 @@ namespace Simulator {
             Console.WriteLine("--DEBUG--");
 #endif
             IEnumerable<Task> taskList = new List<Task>();
-            //CMReroute();
+            taskList = taskList.Concat(CMReroute());
             //SVReroute();
             //var taskArray=SketchCompareAppr();
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));
             //taskList = taskList.Concat(BenchMark("CountMax", false));
-            taskList = taskList.Concat(BenchMark("SketchVisor", false));
+            //taskList = taskList.Concat(BenchMark("SketchVisor", false));
             //SketchAppr();
             //SketchCompareTime();
             var taskArray = taskList.ToArray();
             int i = 0;
+            int countOld = 0;
+            double wait = 0.5;
             while (i < taskArray.Length) {
                 var trd = taskArray.Count(t => t.Status == TaskStatus.Running);
-                Console.Write($"\rActive Thread: {trd}, Finished: {i - trd}, Waiting:{taskArray.Length - i}\r");
+                Console.Write($"\rActive Thread: {trd}, Finished: {i - trd}, Waiting:{taskArray.Length - i}, Speed: {(int) ((Counter - countOld) / wait)}/s.\r");
+                countOld = Counter;
                 if (trd < 3) {
                     Console.Write("\r");
                     taskArray[i++].Start();
                 }
-                Thread.Sleep(1000);
+                Thread.Sleep((int) (wait * 1000));
             }
             Task.WaitAll(taskArray);
             Console.WriteLine("Press Q to exit.");
@@ -410,15 +416,14 @@ namespace Simulator {
                         var flowReal = LoadFlow(fin, topo);
 
                         var task =
-                            new Task(() =>
-                            {
-                                double maxLoad = 0;
-                                foreach (Flow flow in flowReal) {
-                                    flow.Assign();
-                                }
-                                var load = from sw in topo.FetchLinkLoad() select sw.Value;
-                                Console.WriteLine($"{topos,10}{flow_count,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
-                            });
+                            new Task(() => {
+                                         double maxLoad = 0;
+                                         foreach (Flow flow in flowReal) {
+                                             flow.Assign();
+                                         }
+                                         var load = from sw in topo.FetchLinkLoad() select sw.Value;
+                                         Console.WriteLine($"{topos,10}{flow_count,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
+                                     });
                         taskList.Add(task);
                         task.Start();
                         //}
