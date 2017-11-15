@@ -37,7 +37,7 @@ namespace Simulator {
 
         static List<Flow> ReRouteWithSketch(Topology topo, List<Flow> flowSet, ISketch<Flow, ElemType> sketch) {
             foreach (Flow flow in flowSet) {
-                //sketch.Update(flow, (long) flow.Traffic);
+                sketch.Update(flow, (long) flow.Traffic);
             }
             var newFlow = new List<Flow>();
             foreach (Flow flow in flowSet) {
@@ -141,7 +141,7 @@ namespace Simulator {
             Task.WaitAll(taskList.ToArray());
         }
 
-        private static void BenchMark(string name = "SketchVisor", bool head = true) {
+        private static Task[] BenchMark(string name = "SketchVisor", bool head = true) {
             if (head) {
                 Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
             }
@@ -178,12 +178,11 @@ namespace Simulator {
                                     Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
                                 });
                             taskList.Add(task);
-                            task.Start();
                         }
                     }
                 }
             }
-            Task.WaitAll(taskList.ToArray());
+            return taskList.ToArray();
         }
 
         static void SketchCompareTime() {
@@ -250,15 +249,11 @@ namespace Simulator {
                                         $"{flow_count} in {topos} finished in {t0.TotalMilliseconds}/{t1.TotalMilliseconds}, rerouting...");
 
 
-
                                     var fout = $"REROUTE_SketchVisor_k{k}_{fin}.json";
                                     var newFlow = ReRouteWithSketch(topo, flowSet, sv);
                                     using (var sw = new StreamWriter(fout)) {
                                         sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
                                     }
-
-
-
 
 
                                     var list = new List<Tup>();
@@ -372,15 +367,17 @@ namespace Simulator {
 #if DEBUG
             Console.WriteLine("--DEBUG--");
 #endif
-            //CMReroute();
+            IEnumerable<Task> taskList = new List<Task>();
+            CMReroute();
             //SVReroute();
-            var taskArray=SketchCompareAppr();
+            //var taskArray=SketchCompareAppr();
             //PartialReroute();
-            //BenchMark("Original");
-            //BenchMark("CountMax", false);
-            //BenchMark("SketchVisor", false);
+            //taskList = taskList.Concat(BenchMark("Original"));
+            taskList = taskList.Concat(BenchMark("CountMax", false));
+            taskList = taskList.Concat(BenchMark("SketchVisor", false));
             //SketchAppr();
             //SketchCompareTime();
+            var taskArray = taskList.ToArray();
             int i = 0;
             while (i < taskArray.Length) {
                 var trd = taskArray.Count(t => t.Status == TaskStatus.Running);
@@ -391,7 +388,7 @@ namespace Simulator {
                 }
                 Thread.Sleep(1000);
             }
-            Task.WaitAll(taskArray.ToArray());
+            Task.WaitAll(taskArray);
             Console.WriteLine("Press Q to exit.");
             while (true) {
                 var c = Console.ReadKey();
