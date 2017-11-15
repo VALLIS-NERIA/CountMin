@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,8 @@ namespace Simulation {
         public double MaxLoad {
             get => GetMaxLoad();
         }
+
+        public int Length => (this.Count == 0 ? 99999 : this.Count - 1);
 
         public new void Add(Switch sw) {
             //if (Count > 0) {
@@ -64,6 +67,14 @@ namespace Simulation {
             }
         }
 
+        public static Path operator +(Path lhs, Path rhs) {
+            if (lhs.Last() != rhs.First()) {
+                throw new ArgumentException();
+            }
+            
+            return new Path(lhs.Take(lhs.Count-1).Concat(rhs).ToList());
+        }
+
         public Path(List<Switch> sw) : base(sw) { }
         public Path(Path sw) : base((List<Switch>) sw) { }
 
@@ -71,6 +82,46 @@ namespace Simulation {
     }
 
     public delegate Path RoutingAlgorithm(Switch src, Switch dst);
+
+    public class Floyd {
+        private Dictionary<Switch, Dictionary<Switch, Path>> table;
+        private Topology topo;
+
+        public Floyd(Topology topo) {
+            this.topo = topo;
+            this.table = new Dictionary<Switch, Dictionary<Switch, Path>>();
+            Init();
+        }
+
+        private void Init() {
+            foreach (Switch sw1 in topo.Switches) {
+                this.table[sw1] = new Dictionary<Switch, Path>();
+                this.table[sw1][sw1] = new Path {sw1};
+                foreach (Switch sw3 in this.topo.Switches) {
+                    this.table[sw1][sw3] = new Path();
+                }
+                foreach (Switch sw2 in sw1.LinkedSwitches) {
+                    this.table[sw1][sw2] = new Path {sw1, sw2};
+                }
+            }
+        }
+
+        public Dictionary<Switch, Dictionary<Switch, Path>> Calc() {
+            foreach (Switch k in topo.Switches) {
+                foreach (Switch i in topo.Switches) {
+                    foreach (Switch j in topo.Switches) {
+                        var ij = this.table[i][j];
+                        var ik = this.table[i][k];
+                        var kj = this.table[k][j];
+                        if (ij.Length>ik.Length+kj.Length) {
+                            this.table[i][j] = this.table[i][k] + this.table[k][j];
+                        }
+                    }
+                }
+            }
+            return this.table;
+        }
+    }
 
     public static class OSPF {
         public class Memo {
@@ -88,14 +139,11 @@ namespace Simulation {
             }
         }
 
-        private static Dictionary<(Switch src, Switch dst),Path> known = new Dictionary<(Switch src, Switch dst), Path>();
+        private static Dictionary<(Switch src, Switch dst), Path> known = new Dictionary<(Switch src, Switch dst), Path>();
 
         public static Path FindPath(Switch src, Switch dst) { return FindPath(src, dst, null); }
 
-        public static Path FindPath(Switch src, Switch dst, Memo memo,int maxLength=15) {
-            if (known.ContainsKey((src, dst))) {
-                return known[(src, dst)];
-            }
+        public static Path FindPath(Switch src, Switch dst, Memo memo, int maxLength = 15) {
 
             // begin
             if (memo == null) {
@@ -108,7 +156,6 @@ namespace Simulation {
                 var path = new Path(memo.Route);
                 if (path.Count < memo.Min) {
                     memo.ShortestPath = path;
-                    known[(src, dst)] = path;
                 }
                 return path;
             }

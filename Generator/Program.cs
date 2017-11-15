@@ -19,7 +19,7 @@ namespace Generator {
         static void InitGen() {
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] { Greedy.FindPath};
+            var algo_list = new RoutingAlgorithm[] {Greedy.FindPath};
             var count_list = new[] {10000, 20000, 30000, 40000, 50000};
 
             var taskList = new List<Task>();
@@ -30,7 +30,7 @@ namespace Generator {
                         var task =
                             new Task(() =>
                             {
-                                var fold= $"zipf_{flow_count}_{topos}_OSPF.json";
+                                var fold = $"zipf_{flow_count}_{topos}_OSPF.json";
                                 var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
                                 var flowOld = LoadFlow(fold, topo);
                                 //var traffics =( from flow in flowOld select flow.Traffic).ToList();
@@ -72,38 +72,49 @@ namespace Generator {
             //    sw.Write(json);
             //}
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
-            var topo_list = new[] {"fattree6", "hyperx7"};
+            var topo_list = new[] {"fattree8", "hyperx9"};
             var algo_list = new RoutingAlgorithm[] {OSPF.FindPath};
-            var count_list = new[] {100000, 200000, 300000, 400000, 500000};
+            var count_list = new[] {50000, 100000, 200000, 300000};
             //var flow_count = 10000;
 
             var taskList = new List<Task>();
             foreach (string topos in topo_list) {
+                var topo = LoadTopo(topos + ".json");
+                var table = new Floyd(topo).Calc();
                 foreach (RoutingAlgorithm algorithm in algo_list) {
                     foreach (var flow_count in count_list) {
-                        var topo = LoadTopo(topos+".json");
                         void _do() {
+                            var flowSet = new List<Flow>();
                             var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
                             Console.WriteLine($"invoking {fn}");
-                            var flowSet = new List<Flow>();
+                            var traffics = Zipf.Samples(1, flow_count);
+                            var iter = traffics.GetEnumerator();
+                            iter.MoveNext();
                             for (int i = 0; i < flow_count; ++i) {
-                                flowSet.Add(GenerateRoute(topo, algorithm, Zipf.Sample(1, flow_count)));
-                                Console.Write($"\r{i}");
+                                var src = topo.RandomSwitch();
+                                var dst = topo.RandomSwitch();
+                                while (dst == src) {
+                                    dst = topo.RandomSwitch();
+                                }
+                                var route = table[src][dst];
+                                var f = new Flow(route, iter.Current);
+                                flowSet.Add(f);
+                                iter.MoveNext();
+                                //Console.Write($"\r{i}");
                             }
+                            iter.Dispose();
                             using (var sw = new StreamWriter(fn))
                                 sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
                             Console.WriteLine($"FINISHED {fn}");
                         }
-                        var task =
-                            new Task(_do);
-                        _do();
+
+                        var task = new Task(_do);
                         taskList.Add(task);
-                        //task.Start();
+                        task.Start();
                     }
                 }
+                Task.WaitAll(taskList.ToArray());
             }
-            Task.WaitAll(taskList.ToArray());
-
         }
 
         public static Flow ReRoute(Flow flow, RoutingAlgorithm algo) {
@@ -112,7 +123,7 @@ namespace Generator {
             return new Flow(algo(src, dst)) {Traffic = flow.Traffic};
         }
 
-        public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo,int count=0) {
+        public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo, int count = 0) {
             //int i = 1;
             if (count == 0) {
                 foreach (Flow flow in flowSet) {

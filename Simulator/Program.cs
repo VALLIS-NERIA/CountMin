@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using MathNet.Numerics.Statistics;
 using Newtonsoft.Json;
@@ -19,10 +20,13 @@ namespace Simulator {
     using ElemType = Int64;
 
     static class Program {
-        static int[] k_list = {10, 50, 100, 200, 400, 700, 1000, 2000, 4000, 7000, 10000, 50000};
-        static string[] topo_list = {"fattree6", "hyperx7"};
+        static int[] k_list = {100, 200, 400, 700, 1000, 1500, 2000, 2500, 3000};
+        static string[] topo_list = {"fattree8", "hyperx9"};
+
         static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
-        static int[] count_list = {10000, 20000, 30000, 40000, 50000};
+
+        //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
+        static int[] count_list = {50000, 100000, 200000, 300000};
 
 
         static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ISketch<Flow, ElemType> sketch) {
@@ -33,7 +37,7 @@ namespace Simulator {
 
         static List<Flow> ReRouteWithSketch(Topology topo, List<Flow> flowSet, ISketch<Flow, ElemType> sketch) {
             foreach (Flow flow in flowSet) {
-                sketch.Update(flow, (long) flow.Traffic);
+                //sketch.Update(flow, (long) flow.Traffic);
             }
             var newFlow = new List<Flow>();
             foreach (Flow flow in flowSet) {
@@ -213,8 +217,9 @@ namespace Simulator {
             }
         }
 
-        static void SketchCompareAppr() {
+        static Task[] SketchCompareAppr() {
             var taskList = new List<Task>();
+            var time = new StreamWriter("time.csv");
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
@@ -241,6 +246,20 @@ namespace Simulator {
                                     var t11 = DateTime.Now;
                                     var t0 = t01 - t00;
                                     var t1 = t11 - t10;
+                                    Console.WriteLine(
+                                        $"{flow_count} in {topos} finished in {t0.TotalMilliseconds}/{t1.TotalMilliseconds}, rerouting...");
+
+
+
+                                    var fout = $"REROUTE_SketchVisor_k{k}_{fin}.json";
+                                    var newFlow = ReRouteWithSketch(topo, flowSet, sv);
+                                    using (var sw = new StreamWriter(fout)) {
+                                        sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
+                                    }
+
+
+
+
 
                                     var list = new List<Tup>();
 
@@ -254,7 +273,7 @@ namespace Simulator {
 
                                     using (var sw = new StreamWriter($"analysis/analysis_CountMax_{k}_{flowSet.Count}_{topos}.csv")) {
                                         sw.WriteLine("threshold , average , min , max , hits");
-                                        foreach (var threshold in new[] {0.99, 0.9, 0.8, 0.7, 0.5, 0.3}) {
+                                        foreach (var threshold in new[] {0.99, 0.98, 0.95}) {
                                             var ll = Filter(list, 1 - threshold);
                                             var count = ll.Count(d => d != 0);
                                             sw.WriteLine($"{threshold} , {ll.Average()} , {ll.Min()} , {ll.Max()} , {count}");
@@ -272,13 +291,16 @@ namespace Simulator {
 
                                     using (var sw = new StreamWriter($"analysis/analysis_SketchVisor_{k_sv}_{flowSet.Count}_{topos}.csv")) {
                                         sw.WriteLine("threshold , average , min , max , hits");
-                                        foreach (var threshold in new[] {0.99, 0.9, 0.8, 0.7, 0.5, 0.3}) {
+                                        foreach (var threshold in new[] {0.99, 0.98, 0.95}) {
                                             var ll = Filter(list2, 1 - threshold);
                                             var count = ll.Count(d => d != 0);
                                             sw.WriteLine($"{threshold} , {ll.Average()} , {ll.Min()} , {ll.Max()} , {count}");
                                         }
                                     }
-                                    Console.WriteLine($"-----------{flow_count} in {topos} finished!-----------");
+                                    lock (time) {
+                                        time.WriteLine($"{topos},{flow_count},{k},{t0.TotalMilliseconds},{t1.TotalMilliseconds}");
+                                        time.Flush();
+                                    }
                                 }
                                 catch (Exception ex) {
                                     Console.WriteLine(ex.Message);
@@ -286,13 +308,12 @@ namespace Simulator {
                             }
 
                             var task = new Task(_do);
-                            task.Start();
                             taskList.Add(task);
                         }
                     }
                 }
             }
-            Task.WaitAll(taskList.ToArray());
+            return taskList.ToArray();
         }
 
         static void SketchAppr() {
@@ -353,13 +374,24 @@ namespace Simulator {
 #endif
             //CMReroute();
             //SVReroute();
-            //SketchCompareAppr();
+            var taskArray=SketchCompareAppr();
             //PartialReroute();
             //BenchMark("Original");
             //BenchMark("CountMax", false);
             //BenchMark("SketchVisor", false);
             //SketchAppr();
-            SketchCompareTime();
+            //SketchCompareTime();
+            int i = 0;
+            while (i < taskArray.Length) {
+                var trd = taskArray.Count(t => t.Status == TaskStatus.Running);
+                Console.Write($"\rActive Thread: {trd}, Finished: {i - trd}, Waiting:{taskArray.Length - i}\r");
+                if (trd < 3) {
+                    Console.Write("\r");
+                    taskArray[i++].Start();
+                }
+                Thread.Sleep(1000);
+            }
+            Task.WaitAll(taskArray.ToArray());
             Console.WriteLine("Press Q to exit.");
             while (true) {
                 var c = Console.ReadKey();

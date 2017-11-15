@@ -23,7 +23,7 @@ namespace Simulation {
             public static implicit operator Entry((ElemType _e, ElemType _r, ElemType _d) right) { return new Entry {e = right._e, d = right._d, r = right._r}; }
         }
 
-        protected class SwitchSketch {
+        public class SwitchSketch {
             private Dictionary<Flow, Entry> map;
 
             public int K { get; private set; }
@@ -72,7 +72,7 @@ namespace Simulation {
 
             public ElemType Query(Flow key) {
                 if (this.map.ContainsKey(key)) {
-                    return this.map[key].r;
+                    return this.map[key].r + this.map[key].d + this.map[key].e / 2;
                 }
                 else {
                     return 0;
@@ -112,7 +112,8 @@ namespace Simulation {
             foreach (Switch sw in key) {
                 result.Add(this.map[sw][key]);
             }
-            var avg = (ElemType) result.Max();
+            result.Sort();
+            var avg = (ElemType) result[result.Count / 2];
             return avg;
         }
 
