@@ -27,8 +27,8 @@ namespace Simulation {
 
         public Switch RandomSwitch() { return Switches[(rnd.Next(Switches.Count)/2)*2]; }
 
-        public Dictionary<(Switch src, Switch next), double> FetchLinkLoad() {
-            var list = new Dictionary<(Switch src, Switch next), double>();
+        public Dictionary<Switch, double> FetchLinkLoad() {
+            var list = new Dictionary<Switch, double>();
             foreach (Switch sw in Switches) {
                 list = list.Concat(sw.LinkLoad).ToDictionary(k=>k.Key,k=>k.Value);
             }

@@ -8,18 +8,17 @@ using System.Threading.Tasks;
 namespace Simulation {
     public class Switch {
         [Serializable]
-        public class LinkDict : Dictionary<(Switch src, Switch next), double> {
+        public class LinkDict : Dictionary<Switch, double> {
             public Switch sw;
 
-            public double this[Switch _key] {
+            new public double this[Switch key] {
                 
                 get {
-                    var key = (sw, _key);
                     if (base.ContainsKey(key)) {
                         return base[key];
                     }
                     else {
-                        if (sw.LinkedSwitches.Contains(_key)) {
+                        if (sw.LinkedSwitches.Contains(key)) {
                             base.Add(key, 0);
                             return base[key];
                         }
@@ -31,12 +30,11 @@ namespace Simulation {
                 }
 
                 set {
-                    var key = (sw, _key);
                     if (base.ContainsKey(key)) {
                         base[key] = value;
                     }
                     else {
-                        if (sw.LinkedSwitches.Contains(_key)) {
+                        if (sw.LinkedSwitches.Contains(key)) {
                             base.Add(key, value);
                         }
                         else {

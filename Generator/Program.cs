@@ -81,36 +81,61 @@ namespace Generator {
             foreach (string topos in topo_list) {
                 var topo = LoadTopo(topos + ".json");
                 var table = new Floyd(topo).Calc();
+                var fn = $"udp12w_{topos}_OSPF.json";
+                var traffics = new List<int>();
+                using (var sr = new StreamReader("udp new.txt")) {
+                    while (!sr.EndOfStream) {
+                        traffics.Add(int.Parse(sr.ReadLine()));
+                    }
+                }
+                var flowSet = new List<Flow>();
+                foreach (int traffic in traffics) {
+                    var src = topo.RandomSwitch();
+                    var dst = topo.RandomSwitch();
+                    while (dst == src) {
+                        dst = topo.RandomSwitch();
+                    }
+                    var route = table[src][dst];
+                    var f = new Flow(route, traffic);
+                    flowSet.Add(f);
+                }
+                using (var sw = new StreamWriter(fn)) {
+                    sw.Write(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
+                }
                 foreach (RoutingAlgorithm algorithm in algo_list) {
                     foreach (var flow_count in count_list) {
-                        void _do() {
-                            var flowSet = new List<Flow>();
-                            var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
-                            Console.WriteLine($"invoking {fn}");
-                            var traffics = Zipf.Samples(1, flow_count);
-                            var iter = traffics.GetEnumerator();
-                            iter.MoveNext();
-                            for (int i = 0; i < flow_count; ++i) {
-                                var src = topo.RandomSwitch();
-                                var dst = topo.RandomSwitch();
-                                while (dst == src) {
-                                    dst = topo.RandomSwitch();
-                                }
-                                var route = table[src][dst];
-                                var f = new Flow(route, iter.Current);
-                                flowSet.Add(f);
-                                iter.MoveNext();
-                                //Console.Write($"\r{i}");
-                            }
-                            iter.Dispose();
-                            using (var sw = new StreamWriter(fn))
-                                sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
-                            Console.WriteLine($"FINISHED {fn}");
-                        }
+                        //void _do() {
+                        //    var flowSet = new List<Flow>();
+                        //    var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
+                        //    Console.WriteLine($"invoking {fn}");
+                        //    var samples = Zipf.Samples(1, flow_count);
+                        //    var traffics = new int[flow_count];
+                        //    foreach (int sample in samples) {
+                        //        traffics[sample] += 1;
+                        //    }
+                        //    for (int i = 0; i < flow_count; i++) {
+                        //        traffics[i] += 1;
+                        //    }
+                        //    for (int i = 0; i < flow_count; ++i) {
+                        //        var src = topo.RandomSwitch();
+                        //        var dst = topo.RandomSwitch();
+                        //        while (dst == src) {
+                        //            dst = topo.RandomSwitch();
+                        //        }
+                        //        var route = table[src][dst];
+                        //        //traffics.Count(t => t == i);
+                        //        var f = new Flow(route, traffics[i]);
+                        //        flowSet.Add(f);
+                        //        //Console.Write($"\r{i}");
+                        //    }
+                        //    using (var sw = new StreamWriter(fn))
+                        //        sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
+                        //    Console.WriteLine($"FINISHED {fn}");
+                        //}
 
-                        var task = new Task(_do);
-                        taskList.Add(task);
-                        task.Start();
+                        //var task = new Task(_do);
+                        //taskList.Add(task);
+                        //task.Start();
                     }
                 }
                 Task.WaitAll(taskList.ToArray());
@@ -124,19 +149,20 @@ namespace Generator {
         }
 
         public static int Counter;
+
         public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo, int count = 0) {
-            //int i = 1;
             if (count == 0) {
+                int i = 1;
                 foreach (Flow flow in flowSet) {
                     // DO NOT REROUTE BLANK FLOWS
                     ++Counter;
-                    if (flow.Traffic == 0) {
+                    if (flow.Traffic <= 5) {
                         continue;
                     }
                     var src = flow.IngressSwitch;
                     var dst = flow.OutgressSwitch;
                     flow.OverrideAssign(algo(src, dst));
-                    //Console.Write($"\r{i++}");
+                    Console.Write($"\r{i++}");
                 }
             }
             else {
