@@ -33,7 +33,6 @@ namespace testtt {
         public static bool operator ==(MyStruct l, MyStruct r) { return l.Equals(r); }
         public static bool operator !=(MyStruct l, MyStruct r) { return !(l == r); }
 
-        System.Collections.Generic.
-
+        
     }
 }

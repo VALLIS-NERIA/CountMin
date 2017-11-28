@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="CountMax.cs" />
     <Compile Include="CountMin.cs" />
+    <Compile Include="CountSketch.cs" />
     <Compile Include="Flow.cs" />
     <Compile Include="FlowJson.cs" />
     <Compile Include="Heap.cs" />

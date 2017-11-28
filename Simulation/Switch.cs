@@ -97,6 +97,7 @@ namespace Simulation {
             }
         }
 
+        public void ClearFlow() { this.LinkLoad = new LinkDict() {sw = this}; }
         public void AssignFlow(Flow f) {
             if (PassingFlows.Contains(f)) {
                 throw new ArgumentException();

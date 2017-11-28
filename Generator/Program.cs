@@ -162,7 +162,7 @@ namespace Generator {
                     var src = flow.IngressSwitch;
                     var dst = flow.OutgressSwitch;
                     flow.OverrideAssign(algo(src, dst));
-                    Console.Write($"\r{i++}");
+                    //Console.Write($"\r{i++}");
                 }
             }
             else {
