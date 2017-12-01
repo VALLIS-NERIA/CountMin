@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using MathNet.Numerics.Statistics;
 using Newtonsoft.Json;
 using Simulation;
-using static Generator.Program;
+using static Simulation.Utils;
 using Switch = Simulation.Switch;
 
 //using Tuple1=(System.Double, System.Double);
@@ -95,7 +95,7 @@ namespace Simulator {
                                 }
                                 var topo = LoadTopo(topos + ".json");
                                 var flowSet = LoadFlow(fin, topo);
-                                var newFlow = ReRouteWithSketch(topo, flowSet, new CountMax<Flow, Switch>(k));
+                                var newFlow = ReRouteWithSketch(topo, flowSet, new CountMax(k));
                                 using (var sw = new StreamWriter(fout)) {
                                     sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
                                 }
@@ -229,8 +229,7 @@ namespace Simulator {
             var taskList = new List<Task>();
             var time = new StreamWriter("timenew.csv");
             var anal = new StreamWriter("analysis_All.csv");
-            anal.WriteLine(
-                "topo, k, flow_count, threshold, cm_avg, cm_hit, cm_time, sv_avg, sv_hit, sv_time, cs_avg, cs_hit, cs_time, cm_min, cm_max, sv_min, sv_max, cs_min, cs_max");
+            //anal.WriteLine("topo, k, flow_count, threshold, cm_avg, cm_hit, cm_time, sv_avg, sv_hit, sv_time, cs_avg, cs_hit, cs_time, cm_min, cm_max, sv_min, sv_max, cs_min, cs_max");
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
@@ -242,96 +241,123 @@ namespace Simulator {
                                 //var fin = $"udp12w_{topos}_OSPF.json";
                                 var flowSet = LoadFlow(fin, topo);
                                 //var flow_count = flowSet.Count;
-                                var cm = new CountMax<Flow, Switch>(k, 2);
+                                var cm = new CountMax(k, 2);
+                                cm.Init(topo);
                                 int k_sv = (int) (1.2 * k);
                                 var sv = new SketchVisor(k_sv);
                                 var cs = new CountSketch(k, 2);
-                                Console.WriteLine($"{topos}, {flow_count}, {k} initing                                    ");
+                                var fss = new FSpaceSaving(k);
+                                //Console.WriteLine($"{topos}, {flow_count}, {k} initing                                    ");
+
                                 var t00 = DateTime.Now;
                                 foreach (Flow flow in flowSet) {
                                     cm.Update(flow, (ElemType) flow.Traffic);
                                 }
                                 var t01 = DateTime.Now;
+
                                 var t10 = DateTime.Now;
                                 foreach (Flow flow in flowSet) {
-                                    sv.Update(flow, (ElemType) flow.Traffic);
+                                    //sv.Update(flow, (ElemType) flow.Traffic);
                                 }
                                 var t11 = DateTime.Now;
+
                                 var t20 = DateTime.Now;
                                 foreach (Flow flow in flowSet) {
                                     cs.Update(flow, (ElemType) flow.Traffic);
                                 }
                                 var t21 = DateTime.Now;
+
+                                var t30 = DateTime.Now;
+                                foreach (Flow flow in flowSet) {
+                                    fss.Update(flow, (ElemType) flow.Traffic);
+                                }
+                                var t31 = DateTime.Now;
+
                                 var t0 = t01 - t00;
                                 var t1 = t11 - t10;
                                 var t2 = t21 - t20;
+                                var t3 = t31 - t30;
                                 double cm_time = t0.TotalMilliseconds;
                                 double sv_time = t1.TotalMilliseconds;
                                 double cs_time = t2.TotalMilliseconds;
-
+                                double fss_time = t3.TotalMilliseconds;
+                                //Console.WriteLine($"{topos},{flow_count},{k},{cm_time},{fss_time},{cs_time}");
 
                                 var list_cm = new List<Tup>();
                                 var list_sv = new List<Tup>();
                                 var list_cs = new List<Tup>();
-
-                                var data_cm = new StreamWriter($"data/data_CountMax_{k}_{flowSet.Count}_{topos}.csv");
-                                var anal_cm = new StreamWriter($"analysis/analysis_CountMax_{k}_{flowSet.Count}_{topos}.csv");
-                                var data_sv = new StreamWriter($"data/data_SketchVisor_{k_sv}_{flowSet.Count}_{topos}.csv");
-                                var anal_sv = new StreamWriter($"analysis/analysis_SketchVisor_{k_sv}_{flowSet.Count}_{topos}.csv");
-                                var data_cs = new StreamWriter($"data/data_CountSketch_{k}_{flowSet.Count}_{topos}.csv");
-                                var anal_cs = new StreamWriter($"analysis/analysis_CountSketch_{k}_{flowSet.Count}_{topos}.csv");
-
-
-                                anal_cm.WriteLine("threshold , average , min , max , hits");
-                                anal_sv.WriteLine("threshold , average , min , max , hits");
-                                anal_cs.WriteLine("threshold , average , min , max , hits");
-
+                                var list_fss = new List<Tup>();
+                                //
+                                //var data_cm = new StreamWriter($"data/data_CountMax_{k}_{flowSet.Count}_{topos}.csv");
+                                //var anal_cm = new StreamWriter($"analysis/analysis_CountMax_{k}_{flowSet.Count}_{topos}.csv");
+                                //var data_sv = new StreamWriter($"data/data_SketchVisor_{k_sv}_{flowSet.Count}_{topos}.csv");
+                                //var anal_sv = new StreamWriter($"analysis/analysis_SketchVisor_{k_sv}_{flowSet.Count}_{topos}.csv");
+                                //var data_cs = new StreamWriter($"data/data_CountSketch_{k}_{flowSet.Count}_{topos}.csv");
+                                //var anal_cs = new StreamWriter($"analysis/analysis_CountSketch_{k}_{flowSet.Count}_{topos}.csv");
+                                //
+                                //
+                                //anal_cm.WriteLine("threshold , average , min , max , hits");
+                                //anal_sv.WriteLine("threshold , average , min , max , hits");
+                                //anal_cs.WriteLine("threshold , average , min , max , hits");
+                                //
                                 foreach (Flow flow in flowSet) {
                                     var query_cm = cm.Query(flow);
                                     list_cm.Add((flow.Traffic, query_cm));
-                                    data_cm.WriteLine($"{flow.Traffic} , {query_cm}");
-                                    var query_sv = sv.Query(flow);
-                                    list_sv.Add((flow.Traffic, query_sv));
-                                    data_sv.WriteLine($"{flow.Traffic} , {query_sv}");
+                                    //data_cm.WriteLine($"{flow.Traffic} , {query_cm}");
+                                    //var query_sv = sv.Query(flow);
+                                    //list_sv.Add((flow.Traffic, query_sv));
+                                    //data_sv.WriteLine($"{flow.Traffic} , {query_sv}");
                                     var query_cs = cs.Query(flow);
                                     list_cs.Add((flow.Traffic, query_cs));
-                                    data_cs.WriteLine($"{flow.Traffic},{query_cs}");
+                                    //data_cs.WriteLine($"{flow.Traffic},{query_cs}");
+                                    var query_fss = fss.Query(flow);
+                                    list_fss.Add((flow.Traffic, query_fss));
                                 }
-
-
-                                foreach (var threshold in new[] {0.99, 0.98, 0.95}) {
+                                //
+                                //
+                                foreach (var threshold in new[] {0.99}) {
                                     var ll_cm = Filter(list_cm, 1 - threshold);
                                     var count_cm = ll_cm.Count(d => d != 0);
-                                    anal_cm.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
+                                    var t_cm = list_cm.Where(t=>t.Item2!=0).Sum(t => t.Item1);
+                                    //Console.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
+                                    //anal_cm.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
 
-                                    var ll_sv = Filter(list_sv, 1 - threshold);
-                                    var count_sv = ll_sv.Count(d => d != 0);
-                                    anal_sv.WriteLine($"{threshold} , {ll_sv.Average()} , {ll_sv.Min()} , {ll_sv.Max()} , {count_sv}");
+                                    //var ll_sv = Filter(list_sv, 1 - threshold);
+                                    //var count_sv = ll_sv.Count(d => d != 0);
+                                    //anal_sv.WriteLine($"{threshold} , {ll_sv.Average()} , {ll_sv.Min()} , {ll_sv.Max()} , {count_sv}");
 
                                     var ll_cs = Filter(list_cs, 1 - threshold);
                                     var count_cs = ll_cs.Count(d => d != 0);
-                                    anal_cs.WriteLine($"{threshold} , {ll_cs.Average()} , {ll_cs.Min()} , {ll_cs.Max()} , {count_cs}");
-                                    lock (anal) {
-                                        anal.Write($"{topos},{k},{flow_count},{threshold} ,");
-                                        anal.WriteLine(
-                                            $"{ll_cm.Average()},{count_cm},{cm_time},{ll_sv.Average()},{count_sv},{sv_time},{ll_cs.Average()},{count_cs},{cs_time},{ll_cm.Min()} , {ll_cm.Max()} ,{ll_sv.Min()} , {ll_sv.Max()} ,{ll_cs.Min()} , {ll_cs.Max()} ,");
-                                        anal.Flush();
-                                    }
-                                }
+                                    var t_cs = list_cs.Where(t => t.Item2 != 0).Sum(t => t.Item1);
+                                    //anal_cs.WriteLine($"{threshold} , {ll_cs.Average()} , {ll_cs.Min()} , {ll_cs.Max()} , {count_cs}");
+                                    var ll_fss = Filter(list_fss, 1 - threshold);
+                                    var count_fss = ll_fss.Count(d => d != 0);
+                                    var t_fss = list_fss.Where(t => t.Item2 != 0).Sum(t => t.Item1);
 
-                                data_cm.Close();
-                                anal_cm.Close();
-                                data_sv.Close();
-                                anal_sv.Close();
-                                data_cs.Close();
-                                anal_cs.Close();
-
-                                lock (time) {
-                                    time.WriteLine($"{topos},{flow_count},{k},{cm_time},{sv_time}");
-                                    time.Flush();
+                                    var total = list_cm.Sum(t => t.Item1);
+                                    Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
+                                    //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold} , {ll_fss.Average()} , {ll_fss.Min()} , {ll_fss.Max()} , {count_fss}                                ");
+                                    //    //lock (anal) {
+                                    //    //    anal.Write($"{topos},{k},{flow_count},{threshold} ,");
+                                    //    //    anal.WriteLine(
+                                    //    //        $"{ll_cm.Average()},{count_cm},{cm_time},{ll_sv.Average()},{count_sv},{sv_time},{ll_cs.Average()},{count_cs},{cs_time},{ll_cm.Min()} , {ll_cm.Max()} ,{ll_sv.Min()} , {ll_sv.Max()} ,{ll_cs.Min()} , {ll_cs.Max()} ,");
+                                    //    //    anal.Flush();
+                                    //    //}
                                 }
-                                Console.WriteLine(
-                                    $"{topos}, {flow_count}, {k} finished in {cm_time}/{sv_time}/{cs_time}, rerouting...                   ");
+                                //
+                                //data_cm.Close();
+                                //anal_cm.Close();
+                                //data_sv.Close();
+                                //anal_sv.Close();
+                                //data_cs.Close();
+                                //anal_cs.Close();
+                                //
+                                //lock (time) {
+                                //    time.WriteLine($"{topos},{flow_count},{k},{cm_time},{sv_time}");
+                                //    time.Flush();
+                                //}
+                                //Console.WriteLine(
+                                //    $"{topos}, {flow_count}, {k} finished in {cm_time}/{sv_time}/{cs_time}, rerouting...                   ");
                                 //var fout = $"REROUTE_CountMax_k{k}_{fin}.json";
                                 //var newFlow = ReRouteWithSketch(topo, flowSet, cm);
                                 //using (var sw = new StreamWriter(fout)) {
@@ -349,9 +375,14 @@ namespace Simulator {
                                 //using (var sw = new StreamWriter(fout)) {
                                 //    sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
                                 //}
+                                //var fout = $"REROUTE_FSS_k{k}_{fin}.json";
+                                //var newFlow = ReRouteWithSketch(topo, flowSet, fss);
+                                //using (var sw = new StreamWriter(fout)) {
+                                //    sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
+                                //}
                             }
 
-                            //_do();
+
                             var task = new Task(_do);
                             taskList.Add(task);
                         }
@@ -402,21 +433,48 @@ namespace Simulator {
             //Task.WaitAll(taskList.ToArray());
         }
 
-        static Topology LoadTopo(string fileName)
-            => fileName.EndsWith(".json")
-                   ? JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology()
-                   : JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName + ".json")).ToTopology();
-
-        static List<Flow> LoadFlow(string fileName, Topology topo)
-            => fileName.EndsWith(".json")
-                   ? JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName)).ToCoflow(topo)
-                   : JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName + ".json")).ToCoflow(topo);
 
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
 #if DEBUG
             Console.WriteLine("--DEBUG--");
 #endif
+
+            //var topo = LoadTopo("fattree8" + ".json");
+            //var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+            //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
+            //var fout = $"fss_reroute.json";
+            //var fin = "zipf_50000_fattree8_OSPF.json";
+            //var flowReal = LoadFlow(fin, topo);
+            //var flowSet =  LoadFlow(fout, topo);
+            //double maxLoad = 0;
+            //var iter0 = flowReal.GetEnumerator();
+            //var iter = flowSet.GetEnumerator();
+            //iter.MoveNext();
+            //iter0.MoveNext();
+            //while (true) {
+            //    var flow0 = iter0.Current;
+            //    var flow = iter.Current;
+            //    flow.Traffic = flow0.Traffic;
+            //    flow.Assign();
+            //    if (!iter.MoveNext() ||
+            //        !iter0.MoveNext()) {
+            //        break;
+            //    }
+            //}
+            //var load = from sw in topo.FetchLinkLoad() select sw.Value;
+            //iter.Dispose();
+            //iter0.Dispose();
+            //Console.WriteLine(load.Max());
+            //var flowSet =  LoadFlow(fin, topo);
+            //var fss = new FSpaceSaving(700);
+            //foreach (Flow flow in flowSet) {
+            //    fss.Update(flow, (ElemType)flow.Traffic);
+            //}
+            //var newFlow = ReRouteWithSketch(topo, flowSet, fss);
+            //using (var sw = new StreamWriter("fss_reroute.json")) {
+            //    sw.Write(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
+            //}
             IEnumerable<Task> taskList = new List<Task>();
             //SketchAppr();
             //taskList = taskList.Concat(CMReroute());
@@ -430,29 +488,7 @@ namespace Simulator {
             //SketchAppr();
             //SketchCompareTime();
             var taskArray = taskList.ToArray();
-            int i = 0;
-            int countOld = 0;
-            double wait = 0.05;
-            while (true) {
-                var trd = taskArray.Count(t => t.Status == TaskStatus.Running);
-                var finish = taskArray.Count(t => t.Status == TaskStatus.RanToCompletion || t.Status == TaskStatus.Faulted);
-                Console.Write($"\rActive Thread: {trd}, Finished: {finish}, Waiting:{taskArray.Length - i}, Speed: {(int) ((Counter - countOld) / wait)}/s.                 \r");
-                countOld = Counter;
-                if (trd < 3 && i < taskArray.Length) {
-                    Console.Write("\r");
-                    taskArray[i++].Start();
-                }
-                if (i == taskArray.Length && finish == taskArray.Length) break;
-                Thread.Sleep((int) (wait * 1000));
-            }
-            Task.WaitAll(taskArray);
-            Console.WriteLine("\nPress Q to exit.");
-            while (true) {
-                var c = Console.ReadKey();
-                if (c.Key == ConsoleKey.Q) {
-                    Environment.Exit(0);
-                }
-            }
+            RunTask(taskArray);
         }
 
         private static void BenchmarkGreedy() {

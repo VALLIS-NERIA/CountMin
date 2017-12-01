@@ -10,6 +10,12 @@ namespace Simulation {
         private static Random rnd = new Random();
         public List<Switch> Switches;
         public Topology() { Switches = new List<Switch>(); }
+        public Dictionary<Switch, Dictionary<Switch, Path>> Floyd { get; private set; }
+
+        public void FloydCalc() {
+            var floyd = new Floyd(this);
+            this.Floyd = floyd.Calc();
+        }
 
         public TopologyJson ToTopologyJson() {
             var json = new TopologyJson();

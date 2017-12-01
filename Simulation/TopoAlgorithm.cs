@@ -71,13 +71,14 @@ namespace Simulation {
             if (lhs.Last() != rhs.First()) {
                 throw new ArgumentException();
             }
-            
-            return new Path(lhs.Take(lhs.Count-1).Concat(rhs).ToList());
+
+            return new Path(lhs.Take(lhs.Count - 1).Concat(rhs).ToList());
         }
 
         public Path(List<Switch> sw) : base(sw) { }
         public Path(Path sw) : base((List<Switch>) sw) { }
 
+        public Path(Stack<Switch> stack) : base(stack.Reverse().ToList()) { }
         public Path() : base() { }
     }
 
@@ -113,7 +114,7 @@ namespace Simulation {
                         var ij = this.table[i][j];
                         var ik = this.table[i][k];
                         var kj = this.table[k][j];
-                        if (ij.Length>ik.Length+kj.Length) {
+                        if (ij.Length > ik.Length + kj.Length) {
                             this.table[i][j] = this.table[i][k] + this.table[k][j];
                         }
                     }
@@ -144,7 +145,6 @@ namespace Simulation {
         public static Path FindPath(Switch src, Switch dst) { return FindPath(src, dst, null); }
 
         public static Path FindPath(Switch src, Switch dst, Memo memo, int maxLength = 15) {
-
             // begin
             if (memo == null) {
                 memo = new Memo();
@@ -189,27 +189,50 @@ namespace Simulation {
     }
 
     public static class Greedy {
+        public static double GetMaxLoad(this IEnumerable<Switch> path) {
+            double load = 0;
+            using (var iter = path.GetEnumerator()) {
+                iter.MoveNext();
+                while (true) {
+                    var sw = iter.Current;
+                    if (!iter.MoveNext()) {
+                        break;
+                    }
+                    var sw2 = iter.Current;
+                    var cload = sw.LinkLoad[sw2];
+                    if (cload > load) {
+                        load = cload;
+                    }
+                }
+                return load;
+            }
+        }
+
         public class Memo {
-            public Path Route;
-            public Dictionary<Switch, bool> Visited;
+            public Stack<Switch> Route;
+
+            //public Dictionary<Switch, bool> Visited;
             public Path ShortestPath;
+
             public double MaxLoad = 0;
             public double ShortestPathLoad = double.MaxValue;
 
             public Memo() {
-                Route = new Path();
-                Visited = new Dictionary<Switch, bool>();
+                Route = new Stack<Switch>();
+                //Visited = new Dictionary<Switch, bool>();
                 ShortestPath = null;
             }
         }
 
         public static Path FindPath(Switch src, Switch dst) {
-            var path = OSPF.FindPath(src, dst, null);
+            var path = src.Topology.Floyd[src][dst];
             if (path.MaxLoad == 0) {
                 return path;
             }
             else {
-                return FindPath(src, dst, null, path.Count).path;
+                var memo = new Memo();
+                memo.Route.Push(src);
+                return FindPath(src, dst, memo, path.Count).path;
             }
         }
 
@@ -219,16 +242,36 @@ namespace Simulation {
                 return p;
             }
             else {
-                return FindPath(pre.IngressSwitch, pre.OutgressSwitch, null, p.Count).path;
+                var memo = new Memo();
+                memo.Route.Push(pre.First());
+                return FindPath(pre.IngressSwitch, pre.OutgressSwitch, memo, p.Count).path;
             }
         }
 
+        public static Path FindPathNoRecursive(Switch src, Switch dst, int length) {
+            Dictionary<Switch, bool> visited = new Dictionary<Switch, bool>();
+            foreach (Switch sw in src.Topology.Switches) {
+                visited.Add(sw, false);
+            }
+            Stack<Switch> stack = new Stack<Switch>();
+            stack.Push(src);
+            visited[src] = true;
+            double load = 0;
+            double shortestLoad = double.MaxValue;
+            Path shortestPath = null;
+            while (stack.Count != 0) {
+                throw new NotImplementedException();
+            }
+            return shortestPath;
+        }
+
+        // memo.Route should be intialized with src inside
         public static (Path path, double load) FindPath(Switch src, Switch dst, Memo memo, int OspfLength) {
             // begin
-            if (memo == null) {
-                memo = new Memo();
-                memo.Route.Add(src);
-            }
+            //if (memo == null) {
+            //    memo = new Memo();
+            //    memo.Route.Add(src);
+            //}
 
             // end
             if (src == dst) {
@@ -244,26 +287,33 @@ namespace Simulation {
             // inside
             Path shortest = null;
             var shortestLoad = double.MaxValue;
-            memo.Visited[src] = true;
+            //memo.Visited[src] = true;
+            src.Visited = true;
             foreach (var sw in src.LinkedSwitches) {
-                //push
-                var oldLoad = memo.MaxLoad;
-                var newLoad = memo.Route.Last().LinkLoad[sw];
-                if (newLoad > memo.MaxLoad) {
-                    memo.MaxLoad = newLoad;
+                if (sw.Visited) {
+                    goto next;
                 }
-                memo.Route.Add(sw);
+                if (memo.Route.Count + 1 > OspfLength + 4) {
+                    goto next;
+                }
+                // peek
+                var oldLoad = memo.MaxLoad;
+                var currentLoad = memo.Route.Peek().LinkLoad[sw];
+                var newLoad = currentLoad > oldLoad ? currentLoad : oldLoad;
 
                 // chop
-                if (memo.Route.Count > OspfLength + 4) {
-                    goto pop;
+                if (newLoad > memo.ShortestPathLoad) {
+                    goto next;
                 }
-                if (memo.MaxLoad > memo.ShortestPathLoad || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
-                    goto pop;
+                if (newLoad == memo.ShortestPathLoad && memo.Route.Count > memo.ShortestPath.Count) {
+                    goto next;
                 }
-                if (memo.MaxLoad == memo.ShortestPathLoad && memo.Route.Count > memo.ShortestPath.Count) {
-                    goto pop;
-                }
+
+                //push
+
+                memo.MaxLoad = newLoad;
+                memo.Route.Push(sw);
+
                 // recursive
                 var result = FindPath(sw, dst, memo, OspfLength);
 
@@ -272,8 +322,10 @@ namespace Simulation {
                 if (result.path == null) {
                     goto pop;
                 }
-                if (result.load < shortestLoad
-                    || (result.load == shortestLoad && result.path.Count < shortest.Count)) {
+                if (result.load > shortestLoad) {
+                    goto next;
+                }
+                else if (result.load < shortestLoad || result.path.Count < shortest.Count) {
                     shortest = result.path;
                     shortestLoad = result.load;
                 }
@@ -282,66 +334,69 @@ namespace Simulation {
                 pop:
                 memo.MaxLoad = oldLoad;
                 memo.Route.Pop();
+                next:
+                continue;
             }
-            memo.Visited[src] = false;
+            src.Visited = false;
+            //memo.Visited[src] = false;
             return (shortest, shortestLoad);
         }
 
-        public static Path FindPathOld(Switch src, Switch dst) {
-            var path = OSPF.FindPath(src, dst, null);
-            if (path.MaxLoad == 0) {
-                return path;
-            }
-            else {
-                return FindPathOld(src, dst, null, path.Count);
-            }
-        }
+        //public static Path FindPathOld(Switch src, Switch dst) {
+        //    var path = OSPF.FindPath(src, dst, null);
+        //    if (path.MaxLoad == 0) {
+        //        return path;
+        //    }
+        //    else {
+        //        return FindPathOld(src, dst, null, path.Count);
+        //    }
+        //}
 
-        public static Path FindPathOld(Switch src, Switch dst, Memo memo, int OspfLength) {
-            // begin
-            if (memo == null) {
-                memo = new Memo();
-                memo.Route.Add(src);
-            }
+        //public static Path FindPathOld(Switch src, Switch dst, Memo memo, int OspfLength) {
+        //    // begin
+        //    if (memo == null) {
+        //        memo = new Memo();
+        //        memo.Route.Push(src);
+        //    }
 
-            // end
-            if (src == dst) {
-                var path = new Path(memo.Route);
-                if (path.MaxLoad < memo.ShortestPathLoad
-                    || (path.MaxLoad == memo.ShortestPathLoad && path.Count < memo.ShortestPath.Count)) {
-                    memo.ShortestPath = path;
-                }
-                return path;
-            }
+        //    // end
+        //    if (src == dst) {
+        //        var path = new Path(memo.Route);
+        //        if (path.MaxLoad < memo.ShortestPathLoad
+        //            || (path.MaxLoad == memo.ShortestPathLoad && path.Count < memo.ShortestPath.Count)) {
+        //            memo.ShortestPath = path;
+        //        }
+        //        return path;
+        //    }
 
-            // inside
-            Path shortest = null;
-            memo.Visited[src] = true;
-            foreach (var sw in src.LinkedSwitches) {
-                memo.Route.Add(sw);
-                if (memo.Route.Count > OspfLength + 4) {
-                    goto pop;
-                }
-                if (memo.Route.MaxLoad >= memo.ShortestPathLoad
-                    || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
-                    goto pop;
-                }
-                if (memo.Route.MaxLoad == memo.ShortestPathLoad && memo.Route.Count > memo.ShortestPath.Count) {
-                    goto pop;
-                }
-                var path = FindPathOld(sw, dst, memo, OspfLength);
-                if (path == null) {
-                    goto pop;
-                }
-                var min = shortest?.MaxLoad ?? double.MaxValue;
-                if (path.MaxLoad < min) {
-                    shortest = path;
-                }
-                pop:
-                memo.Route.Pop();
-            }
-            memo.Visited[src] = false;
-            return shortest;
-        }
+        //    // inside
+        //    Path shortest = null;
+        //    memo.Visited[src] = true;
+        //    foreach (var sw in src.LinkedSwitches) {
+        //        memo.Route.Push(sw);
+        //        if (memo.Route.Count > OspfLength + 4) {
+        //            goto pop;
+        //        }
+        //        if (memo.Route.GetMaxLoad() >= memo.ShortestPathLoad
+        //            || (memo.Visited.ContainsKey(sw) && memo.Visited[sw])) {
+        //            goto pop;
+        //        }
+        //        if (memo.Route.GetMaxLoad() == memo.ShortestPathLoad && memo.Route.Count > memo.ShortestPath.Count) {
+        //            goto pop;
+        //        }
+        //        var path = FindPathOld(sw, dst, memo, OspfLength);
+        //        if (path == null) {
+        //            goto pop;
+        //        }
+        //        var min = shortest?.MaxLoad ?? double.MaxValue;
+        //        if (path.MaxLoad < min) {
+        //            shortest = path;
+        //        }
+        //        pop:
+        //        memo.Route.Pop();
+        //    }
+        //    memo.Visited[src] = false;
+        //    return shortest;
+        //}
     }
 }

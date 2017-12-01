@@ -1,11 +1,15 @@
 set size 0.6,0.6
 set terminal postscript eps enhanced "NimbusSanL-Regu" fontfile "uhvr8a.pfb" 22
-set key font ",18"
+set key font ",16"
 call "draw_appr.txt" "200000_095" "1000_095" "ft"
 call "draw_appr.txt" "200000_095" "1000_095" "hy"
 call "draw_appr.txt" "200000_099" "1000_099" "ft"
 call "draw_appr.txt" "200000_099" "1000_099" "hy"
+set key right top box
 call "draw_load.txt" "200000" "1000" "ft"
+set key right bottom box
 call "draw_load.txt" "200000" "1000" "hy"
 call "draw_time.txt" "200000" "1000" "ft"
 call "draw_time.txt" "200000" "1000" "hy"
+call "draw_hit.txt" "200000" "1000" "ft"
+call "draw_hit.txt" "200000" "1000" "hy"

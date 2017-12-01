@@ -11,6 +11,10 @@ using System.Threading.Tasks;
 using ElemType = System.Int64;
 
 namespace Simulation {
+    public interface IReversibleSketch <TKey, TValue>:ISketch<TKey,TValue> {
+        IEnumerable<TKey> GetAllKeys();
+    }
+
     public interface ISketch <TKey, TValue> {
         void Update(TKey key, TValue value);
         TValue Query(TKey key);

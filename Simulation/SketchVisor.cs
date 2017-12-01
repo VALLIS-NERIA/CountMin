@@ -36,9 +36,13 @@ namespace Simulation {
                 var a2 = l1.ElementAt(1);
                 var ak = l1.Last();
                 var b = (double) (a1 - 1) / (a2 - 1);
-                var theta = Log(0.5, b);
-                var _e = Pow(1 - delta, 1 / theta);
-                return (ElemType) Round(_e);
+                var theta = b == 1 ? 1 : Log(0.5, b);
+                var _e = Pow(1 - delta, 1 / theta) * ak;
+                var __e = (ElemType) Round(_e);
+                if (__e < 0) {
+                    ;
+                }
+                return __e;
             }
 
             /// <summary>
@@ -48,40 +52,48 @@ namespace Simulation {
             /// <param name="v"></param>
             /// <returns>true: kickout; false: no kickout</returns>
             public bool Update(Flow f, ElemType v) {
-                this.V += v;
-                if (hashMap.ContainsKey(f)) {
-                    hashMap[f] += (0, v, 0);
-                    return false;
-                }
-                else if (hashMap.Count < K) {
-                    hashMap[f] = new Entry {e = E, r = v, d = 0};
-                    return false;
-                }
-                else {
-                    var list = this.hashMap.Select(e => e.Value.r).Concat(new List<ElemType> {v});
-                    var _e = ComputeThresh(list);
-                    var readyRemove = new List<Flow>();
-                    var keys = this.hashMap.Keys.ToList();
-                    foreach (var key in keys) {
-                        this.hashMap[key] += (0, -_e, +_e);
-                        if (this.hashMap[key].r < 0) {
-                            readyRemove.Add(key);
+                checked {
+                    this.V += v;
+                    if (hashMap.ContainsKey(f)) {
+                        hashMap[f] += (0, v, 0);
+                        return false;
+                    }
+                    else if (hashMap.Count < K) {
+                        hashMap[f] = new Entry {e = E, r = v, d = 0};
+                        return false;
+                    }
+                    else {
+                        var list = this.hashMap.Select(e => e.Value.r).Concat(new List<ElemType> {v});
+                        var _e = ComputeThresh(list);
+                        var readyRemove = new List<Flow>();
+                        var keys = this.hashMap.Keys.ToList();
+                        foreach (var key in keys) {
+                            this.hashMap[key] += (0, -_e, +_e);
+                            if (this.hashMap[key].r < 0) {
+                                readyRemove.Add(key);
+                            }
                         }
+                        foreach (var key in readyRemove) {
+                            this.hashMap.Remove(key);
+                        }
+                        if (v > _e && this.hashMap.Count < K) {
+                            hashMap[f] = new Entry {e = E, r = v - _e, d = _e};
+                        }
+                        this.E += _e;
+                        return true;
                     }
-                    foreach (var key in readyRemove) {
-                        this.hashMap.Remove(key);
-                    }
-                    if (v > _e && this.hashMap.Count < K) {
-                        hashMap[f] = new Entry {e = E, r = v - _e, d = _e};
-                    }
-                    this.E += _e;
-                    return true;
                 }
             }
 
             public ElemType Query(Flow key) {
                 if (this.hashMap.ContainsKey(key)) {
-                    return this.hashMap[key].r + this.hashMap[key].d + this.hashMap[key].e / 2;
+                    checked {
+                        var ret = this.hashMap[key].r + this.hashMap[key].d + this.hashMap[key].e / 2;
+                        if (ret < 0) {
+                            Console.WriteLine();
+                        }
+                        return ret;
+                    }
                 }
                 else {
                     return 0;
@@ -108,15 +120,16 @@ namespace Simulation {
         }
 
         public int TotalUpdate = 0;
+
         public int TotalKickout = 0;
         //public int FlowKickout = 0;
 
         public void Update(Flow key, long value) {
             foreach (Switch sw in key) {
                 if (!this.map.ContainsKey(sw)) {
-                    this.map.Add(sw,new SwitchSketch(this.K));
+                    this.map.Add(sw, new SwitchSketch(this.K));
                 }
-                var kickout=this.map[sw].Update(key, value);
+                var kickout = this.map[sw].Update(key, value);
                 if (kickout) {
                     this.TotalKickout += 1;
                 }
@@ -134,6 +147,9 @@ namespace Simulation {
             }
             result.Sort();
             var avg = (ElemType) result.Average();
+            if (avg < 0) {
+                Console.WriteLine();
+            }
             return avg;
         }
 

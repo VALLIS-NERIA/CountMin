@@ -7,15 +7,68 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Simulation;
+using static Simulation.Utils;
 using MathNet.Numerics;
 using MathNet.Numerics.Distributions;
+using MathNet.Numerics.Statistics;
 
 namespace Generator {
     public class Program {
         static Random rnd = new Random();
-        static Topology LoadTopo(string fileName) => JsonConvert.DeserializeObject<TopologyJson>(File.ReadAllText(fileName)).ToTopology();
-        static List<Flow> LoadFlow(string fileName, Topology topo) => JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText(fileName)).ToCoflow(topo);
+        static int[] k_list = {100, 200, 400, 700, 1000, 1500, 2000, 2500, 3000};
+        static string[] topo_list = {"fattree8", "hyperx9"};
 
+        static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
+
+        //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
+        private static int[] count_list = {50000, 100000, 200000, 300000};
+        private static Task[] BenchMark(string name = "SketchVisor", bool head = true) {
+            if (head) {
+                Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
+            }
+            var taskList = new List<Task>();
+            foreach (RoutingAlgorithm algorithm in algo_list) {
+                foreach (string topos in topo_list) {
+                    foreach (var flow_count in count_list) {
+                        foreach (int k in new[] { 0 }.Concat(k_list)) {
+                            var topo = LoadTopo(topos + ".json");
+                            var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                            var fout = $"REROUTE_{name}_k{k}_{fin}.json";
+                            if (!File.Exists(fout)) {
+                                continue;
+                            }
+                            var task =
+                                new Task(() =>
+                                {
+                                    var flowReal = LoadFlow(fin, topo);
+                                    var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
+                                    double maxLoad = 0;
+                                    var iter0 = flowReal.GetEnumerator();
+                                    var iter = flowSet.GetEnumerator();
+                                    iter.MoveNext();
+                                    iter0.MoveNext();
+                                    while (true) {
+                                        var flow0 = iter0.Current;
+                                        var flow = iter.Current;
+                                        flow.Traffic = flow0.Traffic;
+                                        flow.Assign();
+                                        if (!iter.MoveNext() ||
+                                            !iter0.MoveNext()) {
+                                            break;
+                                        }
+                                    }
+                                    var load = from sw in topo.FetchLinkLoad() select sw.Value;
+                                    iter.Dispose();
+                                    iter0.Dispose();
+                                    Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
+                                });
+                            taskList.Add(task);
+                        }
+                    }
+                }
+            }
+            return taskList.ToArray();
+        }
         static void InitGen() {
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree6", "hyperx7"};
@@ -54,16 +107,15 @@ namespace Generator {
         }
 
 
-        static void MMain() {
+        static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //InitGen();
-            var hy = HyperXGen(9);
-            using (var sw = new StreamWriter("hyperx9.json")) {
-                sw.Write(JsonConvert.SerializeObject(hy.ToTopologyJson()));
-            }
+            var tasks = BenchMark("FSS", true);
+            RunTask(tasks);
+            Console.ReadLine();
         }
 
-        static void Main(string[] args) {
+        static void MMain(string[] args) {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //var topo = FatTreeGen(6);
             //var tJ = topo.ToTopologyJson();
@@ -142,47 +194,6 @@ namespace Generator {
             }
         }
 
-        public static Flow ReRoute(Flow flow, RoutingAlgorithm algo) {
-            var src = flow.IngressSwitch;
-            var dst = flow.OutgressSwitch;
-            return new Flow(algo(src, dst)) {Traffic = flow.Traffic};
-        }
-
-        public static int Counter;
-
-        public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo, int count = 0) {
-            if (count == 0) {
-                int i = 1;
-                foreach (Flow flow in flowSet) {
-                    // DO NOT REROUTE BLANK FLOWS
-                    ++Counter;
-                    if (flow.Traffic <= 5) {
-                        continue;
-                    }
-                    var src = flow.IngressSwitch;
-                    var dst = flow.OutgressSwitch;
-                    flow.OverrideAssign(algo(src, dst));
-                    //Console.Write($"\r{i++}");
-                }
-            }
-            else {
-                int i = 1;
-                foreach (Flow flow in flowSet) {
-                    // DO NOT REROUTE BLANK FLOWS
-                    ++Counter;
-                    if (flow.Traffic == 0) {
-                        continue;
-                    }
-                    var src = flow.IngressSwitch;
-                    var dst = flow.OutgressSwitch;
-                    flow.OverrideAssign(algo(src, dst));
-                    if (++i > count) {
-                        break;
-                    }
-                    //Console.Write($"\r{i++}");
-                }
-            }
-        }
 
         static Flow GenerateRoute(Topology topo, RoutingAlgorithm algo, double traffic) {
             var src = topo.RandomSwitch();

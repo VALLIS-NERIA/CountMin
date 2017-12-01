@@ -22,7 +22,7 @@ namespace Simulation {
             var sw = topo.Switches[num];
             sw.Name = this.name;
             foreach (int i in linkedSwitches) {
-                sw.LinkedSwitches.Add(topo.Switches[i]);
+                sw.Link(topo.Switches[i]);
             }
             return sw;
         }
@@ -39,11 +39,12 @@ namespace Simulation {
         public Topology ToTopology() {
             var topo=new Topology();
             for (int i = 0; i < switchCount; i++) {
-                topo.Switches.Add(new Switch());
+                topo.Switches.Add(new Switch(topo: topo));
             }
             foreach (SwitchJson swJ in switches) {
                 swJ.ToSwitch(topo);
             }
+            topo.FloydCalc();
             return topo;
         }
     }

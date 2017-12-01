@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,23 +12,14 @@ namespace Simulation {
         public class LinkDict : Dictionary<Switch, double> {
             public Switch sw;
 
-            new public double this[Switch key] {
-                
-                get {
-                    if (base.ContainsKey(key)) {
-                        return base[key];
-                    }
-                    else {
-                        if (sw.LinkedSwitches.Contains(key)) {
-                            base.Add(key, 0);
-                            return base[key];
-                        }
-                        else {
-                            // Throws exception
-                            return base[key];
-                        }
-                    }
+            public new void Clear() {
+                base.Clear();
+                foreach (Switch sw in this.sw.LinkedSwitches) {
+                    base[sw] = 0;
                 }
+            }
+            new public double this[Switch key] {
+                get { return base[key]; }
 
                 set {
                     if (base.ContainsKey(key)) {
@@ -46,14 +38,15 @@ namespace Simulation {
             }
 
             public override string ToString() {
-                StringBuilder sb=new StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 foreach (var sw1 in sw.LinkedSwitches) {
                     sb.Append(sw.Name).Append(" -> ").Append(sw1.Name).Append(" : ").Append(this[sw1]).Append(Environment.NewLine);
                 }
                 return sb.ToString();
             }
-
         }
+
+        public bool Visited = false;
 
         private static Random rnd = new Random();
 
@@ -63,25 +56,32 @@ namespace Simulation {
 
         public List<Switch> LinkedSwitches { get; private set; }
 
+        public Topology Topology { get; }
+
         public HashSet<Flow> PassingFlows { get; set; }
 
         public bool IsEdge { get; set; }
 
         public override string ToString() { return Name; }
 
-        public Switch(string name = "unnamed switch", bool isEdge = false) {
+        public Switch(string name = "unnamed switch", bool isEdge = false, Topology topo = null) {
             this.Name = name;
             this.IsEdge = isEdge;
             this.LinkedSwitches = new List<Switch>();
             this.LinkLoad = new LinkDict() {sw = this};
             this.PassingFlows = new HashSet<Flow>();
+            this.Topology = topo;
         }
 
         public void Link(Switch sw) {
-            if (!this.LinkedSwitches.Contains(sw))
+            if (!this.LinkedSwitches.Contains(sw)) {
                 this.LinkedSwitches.Add(sw);
-            if (!sw.LinkedSwitches.Contains(this))
+                this.LinkLoad.Add(sw, 0);
+            }
+            if (!sw.LinkedSwitches.Contains(this)) {
                 sw.LinkedSwitches.Add(this);
+                sw.LinkLoad.Add(this, 0);
+            }
         }
 
         public void RemoveFlow(Flow f) {
@@ -97,7 +97,10 @@ namespace Simulation {
             }
         }
 
-        public void ClearFlow() { this.LinkLoad = new LinkDict() {sw = this}; }
+        public void ClearFlow() {
+            this.LinkLoad.Clear();
+        }
+
         public void AssignFlow(Flow f) {
             if (PassingFlows.Contains(f)) {
                 throw new ArgumentException();

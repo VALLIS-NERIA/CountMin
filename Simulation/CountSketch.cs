@@ -8,7 +8,7 @@ using MathNet.Numerics.Statistics;
 using ElemType = System.Int64;
 
 namespace Simulation {
-    public class CountSketch : ISketch<Flow, ElemType> {
+    public class CountSketch : IReversibleSketch<Flow, ElemType> {
         private delegate uint HashFunc(object obj);
 
         private delegate int SHashFunc(object obj);
@@ -60,10 +60,11 @@ namespace Simulation {
                 int sign = this.sHash(key);
                 return this.Count[index] * sign;
             }
+
         }
 
         public class SwitchSketch {
-            private List<CSLine> stat;
+            private CSLine[] stat;
             private int w, d;
 
             private MinHeap<object, ElemType> heap;
@@ -71,10 +72,10 @@ namespace Simulation {
             public SwitchSketch(int _w, int _d) {
                 this.w = _w;
                 this.d = _d;
-                this.stat = new List<CSLine>();
+                this.stat = new CSLine[d];
                 this.heap = new MinHeap<object, long>();
                 for (int i = 0; i < d; i++) {
-                    stat.Add(new CSLine(w));
+                    stat[i]=(new CSLine(w));
                 }
             }
 
@@ -145,6 +146,16 @@ namespace Simulation {
                 }
                 return result;
             }
+
+            public HashSet<T> GetKeys <T>() where T : class {
+                var set = new HashSet<T>();
+                foreach (var pair in this.heap) {
+                    if (!set.Contains(pair.Key as T)) {
+                        set.Add(pair.Key as T);
+                    }
+                }
+                return set;
+            }
         }
 
         private static Random rnd = new Random();
@@ -159,8 +170,17 @@ namespace Simulation {
             this.data=new Dictionary<Switch, SwitchSketch>();
         }
 
-        public void Update(Flow flow, long value) {
-            foreach (var sw in flow) {
+        public void Update(Flow flow, ElemType value) {
+            var t = value;
+            var packet = 1750000;
+            while (t > 0) {
+                _update(flow, t > packet ? packet : t);
+                t -= packet;
+            }
+        }
+
+        private void _update(Flow flow, ElemType value) {
+            foreach (Switch sw in flow) {
                 if (!data.ContainsKey(sw)) {
                     data.Add(sw, new SwitchSketch(w, d));
                 }
@@ -194,5 +214,13 @@ namespace Simulation {
         }
 
         public long this[Flow key] => Query(key);
+
+        public IEnumerable<Flow> GetAllKeys() {
+            var list = (IEnumerable<Flow>) new List<Flow>();
+            foreach (var pair in this.data) {
+                list = list.Concat(pair.Value.GetKeys<Flow>());
+            }
+            return new HashSet<Flow>(list);
+        }
     }
 }

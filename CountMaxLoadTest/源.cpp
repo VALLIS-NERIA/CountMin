@@ -18,6 +18,11 @@ struct flow_key {
     }
 };
 
+bool equal(const flow_key* lhs,const flow_key* rhs) {
+    return lhs->srcip == rhs->srcip && lhs->dstip == rhs->dstip && lhs->srcport == rhs->srcport &&
+        lhs->dstport == rhs->dstport && lhs->protocol == rhs->protocol;
+}
+
 int get_hash_code(const flow_key* key) {
     int hashCode = (int)key->srcip;
     hashCode = (hashCode * 397) ^ (int)key->dstip;
