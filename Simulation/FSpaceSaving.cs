@@ -127,6 +127,10 @@ namespace Simulation {
                     results .Add(q);
                 }
             }
+            if (results.Count == 0) {
+                return 0;
+            }
+            return results.Min();
             // remove zeros
             results = (from d in results where d != 0 select d).ToList();
             // if only zeros return zero

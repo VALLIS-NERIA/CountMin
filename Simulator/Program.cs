@@ -316,9 +316,9 @@ namespace Simulator {
                                 //
                                 //
                                 foreach (var threshold in new[] {0.99}) {
-                                    var ll_cm = Filter(list_cm, 1 - threshold);
+                                    var ll_cm = Filter(list_cm.Where(t => t.Item2 != 0), 1 - threshold);
                                     var count_cm = ll_cm.Count(d => d != 0);
-                                    var t_cm = list_cm.Where(t=>t.Item2!=0).Sum(t => t.Item1);
+                                    var t_cm = list_cm.Sum(t => t.Item1);
                                     //Console.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
                                     //anal_cm.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
 
@@ -335,7 +335,8 @@ namespace Simulator {
                                     var t_fss = list_fss.Where(t => t.Item2 != 0).Sum(t => t.Item1);
 
                                     var total = list_cm.Sum(t => t.Item1);
-                                    Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
+                                    //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
+                                    Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()}");
                                     //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold} , {ll_fss.Average()} , {ll_fss.Min()} , {ll_fss.Max()} , {count_fss}                                ");
                                     //    //lock (anal) {
                                     //    //    anal.Write($"{topos},{k},{flow_count},{threshold} ,");
@@ -554,10 +555,11 @@ namespace Simulator {
         }
 
 
-        private static List<double> Filter(List<(double, double)> list, double threshold) {
+        private static List<double> Filter(IEnumerable<(double, double)> list, double threshold) {
             var list1 = list;
-            list1.Sort((tuple1, tuple2) => -tuple1.Item1.CompareTo(tuple2.Item1));
-            var q = from tuple in list1.Take((int) (threshold * list1.Count)) select (Math.Abs(tuple.Item2 - tuple.Item1) / tuple.Item1);
+            list1 = list1.OrderByDescending(t => t.Item1);
+            IEnumerable<(double, double)> valueTuples = list1 as (double, double)[] ?? list1.ToArray();
+            var q = from tuple in valueTuples.Take((int) (threshold * valueTuples.Count())) select (Math.Abs(tuple.Item2 - tuple.Item1) / tuple.Item1);
             return q.ToList();
         }
     }
