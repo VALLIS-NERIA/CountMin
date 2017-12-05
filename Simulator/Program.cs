@@ -434,6 +434,49 @@ namespace Simulator {
             //Task.WaitAll(taskList.ToArray());
         }
 
+        static Task[] FSSTesting() {
+            var taskList = new List<Task>();
+            var cm = new CountMax(1000,2);
+            var topo = LoadTopo("hyperx9.json");
+            cm.Init(topo);
+            var flowSet0 = LoadFlow("udp12w_hyperx9_OSPF.json", topo);
+            var t0 = DateTime.Now;
+            foreach (Flow flow in flowSet0) {
+                cm.Update(flow, (ElemType) flow.Traffic);
+            }
+            var t1 = DateTime.Now;
+            var list_cm = new List<Tup>();
+            foreach (Flow flow in flowSet0) {
+                var query_cm = cm.Query(flow);
+                list_cm.Add((flow.Traffic, query_cm));
+            }
+            var ll_cm = Filter(list_cm, 0.01);
+            var count_cm = ll_cm.Count(d => d != 0);
+            var t_cm = list_cm.Sum(t => t.Item1);
+            Console.WriteLine($"{ll_cm.Average()}  {(t1-t0).TotalMilliseconds}                                            ");
+            foreach (int l in new[] {1,2,3,4,5,6,7,10}) {
+                void _do() {
+                    var flowSet = LoadFlow("udp12w_hyperx9_OSPF.json", topo);
+                    var fss = new FSpaceSaving(1000 * l);
+                    var ta = DateTime.Now;
+                    foreach (Flow flow in flowSet0) {
+                        fss.Update(flow, (ElemType) flow.Traffic);
+                    }
+                    var tb = DateTime.Now;
+                    var list_fss = new List<Tup>();
+                    foreach (Flow flow in flowSet0) {
+                        var query_fss = fss.Query(flow);
+                        list_fss.Add((flow.Traffic, query_fss));
+                    }
+                    var ll_fss = Filter(list_fss, 0.01);
+                    var count_fss = ll_fss.Count(d => d != 0);
+                    var t_fss = list_fss.Sum(t => t.Item1);
+                    Console.WriteLine($"{l} , {ll_fss.Average()} , {(tb-ta).TotalMilliseconds}                                                    ");
+                }
+                taskList.Add(new Task(_do));
+            }
+            return taskList.ToArray();
+        }
 
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
@@ -477,10 +520,11 @@ namespace Simulator {
             //    sw.Write(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
             //}
             IEnumerable<Task> taskList = new List<Task>();
+            taskList = taskList.Concat(FSSTesting());
             //SketchAppr();
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
-            taskList = taskList.Concat(SketchCompareAppr());
+            //taskList = taskList.Concat(SketchCompareAppr());
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));
             //taskList = taskList.Concat(BenchMark("CountMax", false));

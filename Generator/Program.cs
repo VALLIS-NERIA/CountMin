@@ -110,8 +110,26 @@ namespace Generator {
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //InitGen();
-            var tasks = BenchMark("FSS", true);
-            RunTask(tasks);
+            var topo = LoadTopo("fattree8.json");
+            var floyd = new Floyd(topo).Calc();
+            var edges = topo.Switches.Where(sw => sw.IsEdge).ToList();
+            var len = edges.Count;
+            var flowSet = new List<Flow>();
+            var traffics = new List<int>();
+            using (var sr = new StreamReader("udp new.txt")) {
+                while (!sr.EndOfStream) {
+                    traffics.Add(int.Parse(sr.ReadLine()));
+                }
+            }
+            var flowCount = traffics.Count;
+            while (flowCount-- > 0) {
+                var src = edges[rnd.Next() % len];
+                var dst = edges[rnd.Next() % len];
+                while (dst == src) {
+                    dst = edges[rnd.Next() % len];
+                }
+                flowSet.Add(new Flow(floyd[src][dst]));
+            }
             Console.ReadLine();
         }
 

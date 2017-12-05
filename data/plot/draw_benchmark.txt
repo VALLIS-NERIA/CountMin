@@ -1,0 +1,26 @@
+OUTDIR = "./fig/"
+SUBFIX = ".eps"
+
+set key right top box
+
+set yrange[0:1.2]
+set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1)
+set xrange[1000:10000]
+set xtics ("1" 1000, "2" 2000, "3" 3000, "4" 4000, "5" 5000, "6" 6000, "7" 7000, "10" 10000)
+
+set xl 'k of FSS({/Symbol \264}10^3)'
+set yl 'Average Error'
+
+FILE = "./fss_benchmark.txt"
+set output OUTDIR."fss_test".SUBFIX
+
+plot \
+0.127452167145049 with lines lw 4 title 'CountMax (k=1000)',\
+FILE u 1:2 with linespoints pointtype 4 lw 4 pointsize 2.3 title 'Filtered SS'
+
+FILE = "./fss_benchmark_hy.txt"
+set output OUTDIR."fss_test_hy".SUBFIX
+
+plot \
+0.0493651739323575 with lines lw 4 title 'CountMax (k=1000)',\
+FILE u 1:2 with linespoints pointtype 4 lw 4 pointsize 2.3 title 'Filtered SS'
