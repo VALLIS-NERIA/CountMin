@@ -1,6 +1,10 @@
 #ifndef COUNTMAX_H
 #define COUNTMAX_H
 #include <stdint.h>
+#include <ctype.h>
+#include <locale.h>
+#include <wchar.h>
+#include <stddef.h>
 typedef int64_t elemtype;
 struct flow_key {
     uint32_t srcip;
@@ -18,5 +22,16 @@ struct countmax_line {
     elemtype* counters;
 };
 static struct countmax_line* new_countmax_line(int w);
-static void update(struct countmax_line* this, struct flow_key* key, elemtype value);
+static void countmax_line_update(struct countmax_line* this, struct flow_key* key, elemtype value);
+static elemtype countmax_line_query(struct countmax_line* this, struct flow_key* key);
+
+struct countmax_sketch {
+    size_t w;
+    size_t d;
+    struct countmax_line** lines;
+};
+
+static struct countmax_sketch* new_countmax_sketch(int w, int d);
+static void countmax_sketch_update(struct countmax_sketch* this, struct flow_key* key, elemtype value);
+static elemtype countmax_sketch_query(struct countmax_sketch* this, struct flow_key* key);
 #endif
