@@ -232,11 +232,13 @@ namespace Simulator {
             //anal.WriteLine("topo, k, flow_count, threshold, cm_avg, cm_hit, cm_time, sv_avg, sv_hit, sv_time, cs_avg, cs_hit, cs_time, cm_min, cm_max, sv_min, sv_max, cs_min, cs_max");
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
-                    foreach (var flow_count in count_list) {
+                    //foreach (var flow_count in count_list) 
+                        {
                         foreach (int k in k_list) {
                             void _do() {
+                                var flow_count = "udp12w";
                                 var topo = LoadTopo(topos + ".json");
-                                var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                                var fin = $"{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
                                 //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
                                 //var fin = $"udp12w_{topos}_OSPF.json";
                                 var flowSet = LoadFlow(fin, topo);
@@ -315,8 +317,8 @@ namespace Simulator {
                                 }
                                 //
                                 //
-                                foreach (var threshold in new[] {0.99}) {
-                                    var ll_cm = Filter(list_cm.Where(t => t.Item2 != 0), 1 - threshold);
+                                foreach (var threshold in new[] {0.001,0.0005,0.0001,0.00001}.Reverse()) {
+                                    var ll_cm = HHFilter(list_cm,  threshold);
                                     var count_cm = ll_cm.Count(d => d != 0);
                                     var t_cm = list_cm.Sum(t => t.Item1);
                                     //Console.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
@@ -326,11 +328,11 @@ namespace Simulator {
                                     //var count_sv = ll_sv.Count(d => d != 0);
                                     //anal_sv.WriteLine($"{threshold} , {ll_sv.Average()} , {ll_sv.Min()} , {ll_sv.Max()} , {count_sv}");
 
-                                    var ll_cs = Filter(list_cs, 1 - threshold);
+                                    var ll_cs = HHFilter(list_cs,  threshold);
                                     var count_cs = ll_cs.Count(d => d != 0);
                                     var t_cs = list_cs.Where(t => t.Item2 != 0).Sum(t => t.Item1);
                                     //anal_cs.WriteLine($"{threshold} , {ll_cs.Average()} , {ll_cs.Min()} , {ll_cs.Max()} , {count_cs}");
-                                    var ll_fss = Filter(list_fss, 1 - threshold);
+                                    var ll_fss = HHFilter(list_fss,  threshold);
                                     var count_fss = ll_fss.Count(d => d != 0);
                                     var t_fss = list_fss.Where(t => t.Item2 != 0).Sum(t => t.Item1);
 
@@ -383,7 +385,7 @@ namespace Simulator {
                                 //}
                             }
 
-
+                            //_do();
                             var task = new Task(_do);
                             taskList.Add(task);
                         }
@@ -520,11 +522,11 @@ namespace Simulator {
             //    sw.Write(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
             //}
             IEnumerable<Task> taskList = new List<Task>();
-            taskList = taskList.Concat(FSSTesting());
+            //taskList = taskList.Concat(FSSTesting());
             //SketchAppr();
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
-            //taskList = taskList.Concat(SketchCompareAppr());
+            taskList = taskList.Concat(SketchCompareAppr());
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));
             //taskList = taskList.Concat(BenchMark("CountMax", false));
@@ -604,6 +606,16 @@ namespace Simulator {
             list1 = list1.OrderByDescending(t => t.Item1);
             IEnumerable<(double, double)> valueTuples = list1 as (double, double)[] ?? list1.ToArray();
             var q = from tuple in valueTuples.Take((int) (threshold * valueTuples.Count())) select (Math.Abs(tuple.Item2 - tuple.Item1) / tuple.Item1);
+            return q.ToList();
+        }
+
+        private static List<double> HHFilter(IEnumerable<(double, double)> list, double threshold) {
+            var list1 = list;
+            var total = list.Sum(t => t.Item1);
+            list1 = list1.OrderByDescending(t => t.Item1);
+            IEnumerable<(double, double)> valueTuples = list1 as (double, double)[] ?? list1.ToArray();
+            valueTuples = valueTuples.Where(t => t.Item1 > total * threshold);
+            var q = from tuple in valueTuples where tuple.Item1 >= total * threshold select (Math.Abs(tuple.Item2 - tuple.Item1) / tuple.Item1);
             return q.ToList();
         }
     }
