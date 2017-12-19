@@ -22,6 +22,7 @@ namespace Generator {
 
         //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
         private static int[] count_list = {50000, 100000, 200000, 300000};
+
         private static Task[] BenchMark(string name = "SketchVisor", bool head = true) {
             if (head) {
                 Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
@@ -30,7 +31,7 @@ namespace Generator {
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
                     foreach (var flow_count in count_list) {
-                        foreach (int k in new[] { 0 }.Concat(k_list)) {
+                        foreach (int k in new[] {0}.Concat(k_list)) {
                             var topo = LoadTopo(topos + ".json");
                             var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
                             var fout = $"REROUTE_{name}_k{k}_{fin}.json";
@@ -69,6 +70,7 @@ namespace Generator {
             }
             return taskList.ToArray();
         }
+
         static void InitGen() {
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree6", "hyperx7"};
@@ -107,7 +109,7 @@ namespace Generator {
         }
 
 
-        static void Main() {
+        static void Main__() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //InitGen();
             var topo = LoadTopo("fattree8.json");
@@ -131,6 +133,88 @@ namespace Generator {
                 flowSet.Add(new Flow(floyd[src][dst]));
             }
             Console.ReadLine();
+        }
+
+
+        static void test() {
+            var flow_count = 10000;
+            var traffics = new int[flow_count];
+            var samples = new int[flow_count*3];
+            Zipf.Samples(samples, 0.2, flow_count);
+            for (int i = 0; i < flow_count; i++) {
+                //traffics[i] = 1;
+            }
+            var c = 0;
+            foreach (int sample in samples) {
+                //if (++c >= 1 * flow_count) break;
+                traffics[(int) sample - 1] += 1;
+            }
+            using (var sw = new StreamWriter("test1.csv")) {
+                for (int i = 0; i < flow_count; i++) {
+                    sw.WriteLine($"{traffics[i]}");
+                }
+            }
+        }
+
+
+        static void Main() {
+            Directory.SetCurrentDirectory(@"..\..\..\data");
+            //test();
+            //return;
+            var topo = TestTopoGen();
+            var s = JsonConvert.SerializeObject(topo.ToTopologyJson());
+            using (var sw = new StreamWriter("testtopo.json")) {
+                sw.Write(s);
+            }
+
+
+            topo = LoadTopo("testtopo");
+            var floyd = new Floyd(topo).Calc();
+            foreach (var flow_count in new[] {1000, 2000, 3000}) {
+                var samples = Zipf.Samples(0.1, flow_count);
+                var traffics = new double[flow_count];
+                for (int i = 0; i < flow_count; i++) {
+                    traffics[i] = 0;
+                }
+                var c = 0;
+                foreach (int sample in samples) {
+                    if (++c >= 1 * flow_count) break;
+                    //traffics[(int) sample - 1] += 1;
+                    traffics[c] = sample;
+                }
+                c = flow_count;
+                var flowSet = new List<Flow>();
+
+                while (c-- > 0) {
+                    var src = topo.RandomSrc();
+                    var dst = topo.RandomDst();
+                    while (dst == src) {
+                        dst = topo.RandomDst();
+                    }
+                    flowSet.Add(new Flow(floyd[src][dst], traffics[c]));
+                }
+                s = JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo));
+                using (var sw = new StreamWriter($"test_{flow_count}.json")) {
+                    sw.Write(s);
+                }
+            }
+        }
+
+        static Topology TestTopoGen() {
+            var topo = new Topology();
+            var switches = new List<Switch>();
+            for (int i = 0; i < 8; i++) {
+                switches.Add(new Switch($"{i}"));
+            }
+            for (int i = 1; i < 4; i++) {
+                switches[i].Link(switches[i + 4]);
+            }
+            for (int i = 1; i < 4; i++) {
+                switches[0].Link(switches[i]);
+                switches[4].Link(switches[i + 4]);
+            }
+            topo.Switches = switches;
+            return topo;
         }
 
         static void MMain(string[] args) {
@@ -211,7 +295,6 @@ namespace Generator {
                 Task.WaitAll(taskList.ToArray());
             }
         }
-
 
         static Flow GenerateRoute(Topology topo, RoutingAlgorithm algo, double traffic) {
             var src = topo.RandomSwitch();

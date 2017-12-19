@@ -40,7 +40,7 @@ namespace Simulator {
                 sw.ClearFlow();
             }
             foreach (Flow flow in flowSet) {
-                //sketch.Update(flow, (long) flow.Traffic);
+                sketch.Update(flow, (long) flow.Traffic);
             }
             var newFlow = new List<Flow>();
             foreach (Flow flow in flowSet) {
@@ -153,36 +153,41 @@ namespace Simulator {
             var taskList = new List<Task>();
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
-                    foreach (var flow_count in count_list) {
+                    //foreach (var flow_count in count_list) 
+                        {
                         foreach (int k in new[] {0}.Concat(k_list)) {
                             var topo = LoadTopo(topos + ".json");
-                            var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                            //var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                            var fin = $"udp12w_{topos}_{algorithm.Method.ReflectedType.Name}";
                             var fout = $"REROUTE_{name}_k{k}_{fin}.json";
-
                             var task =
                                 new Task(() =>
                                 {
-                                    var flowReal = LoadFlow(fin, topo);
-                                    var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
-                                    double maxLoad = 0;
-                                    var iter0 = flowReal.GetEnumerator();
-                                    var iter = flowSet.GetEnumerator();
-                                    iter.MoveNext();
-                                    iter0.MoveNext();
-                                    while (true) {
-                                        var flow0 = iter0.Current;
-                                        var flow = iter.Current;
-                                        flow.Traffic = flow0.Traffic;
-                                        flow.Assign();
-                                        if (!iter.MoveNext() ||
-                                            !iter0.MoveNext()) {
-                                            break;
+                                    try {
+                                        var flowReal = LoadFlow(fin, topo);
+                                        var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
+                                        var flow_count = flowSet.Count;
+                                        double maxLoad = 0;
+                                        var iter0 = flowReal.GetEnumerator();
+                                        var iter = flowSet.GetEnumerator();
+                                        iter.MoveNext();
+                                        iter0.MoveNext();
+                                        while (true) {
+                                            var flow0 = iter0.Current;
+                                            var flow = iter.Current;
+                                            flow.Traffic = flow0.Traffic;
+                                            flow.Assign();
+                                            if (!iter.MoveNext() ||
+                                                !iter0.MoveNext()) {
+                                                break;
+                                            }
                                         }
+                                        var load = from sw in topo.FetchLinkLoad() select sw.Value;
+                                        iter.Dispose();
+                                        iter0.Dispose();
+                                        Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
                                     }
-                                    var load = from sw in topo.FetchLinkLoad() select sw.Value;
-                                    iter.Dispose();
-                                    iter0.Dispose();
-                                    Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
+                                    catch { }
                                 });
                             taskList.Add(task);
                         }
@@ -480,6 +485,71 @@ namespace Simulator {
             return taskList.ToArray();
         }
 
+        static Task[] Prototype() {
+            Console.WriteLine("flow,   k,   origin,   cm,   fss,   cs");
+            var taskList = new List<Task>();
+
+            foreach (int flow_count in new[]{1000,2000,3000}) {
+                foreach (int k in new[]{/*20,40,60,80,*/100, 200, 300 }) {
+                    void _do() {
+                        var topo = LoadTopo("testtopo");
+                        var flowSet = LoadFlow($"test_{flow_count}", topo);
+
+                        var cm = new CountMax(k, 2);
+                        var fss = new FSpaceSaving(k);
+                        var cs = new CountSketch(k, 2);
+
+                        var r_cm = ReRouteWithSketch(topo, flowSet, cm);
+                        var r_fss = ReRouteWithSketch(topo, flowSet, fss);
+                        var r_cs = ReRouteWithSketch(topo, flowSet, cs);
+
+                        topo.Switches.ForEach(s => s.ClearFlow());
+                        //IEnumerable<double> load;
+
+                        flowSet.ForEach(f => f.Assign());
+                        var load0 = from sw in topo.FetchLinkLoad() select sw.Value;
+                        Console.Write($"{flow_count},   {k},   {load0.Max()}");
+                        topo.Switches.ForEach(s => s.ClearFlow());
+
+                        benc(flowSet, r_cm);
+                        benc(flowSet, r_fss);
+                        benc(flowSet, r_cs);
+
+                        void benc(List<Flow> flowReal, List<Flow> flowR) {
+                            topo.Switches.ForEach(s => s.ClearFlow());
+                            var iter0 = flowReal.GetEnumerator();
+                            var iter = flowR.GetEnumerator();
+                            iter.MoveNext();
+                            iter0.MoveNext();
+                            while (true) {
+                                var flow0 = iter0.Current;
+                                var flow = iter.Current;
+                                flow.Traffic = flow0.Traffic;
+                                flow.Assign();
+                                if (!iter.MoveNext() ||
+                                    !iter0.MoveNext()) {
+                                    break;
+                                }
+                            }
+                            var load = from sw in topo.FetchLinkLoad() select sw.Value;
+                            iter.Dispose();
+                            iter0.Dispose();
+                            Console.Write($",    {load.Max()/load0.Max():F4}");
+                        }
+                        Console.WriteLine("                      ");
+                    }
+
+                    _do();
+                    //taskList.Add(new Task(_do));
+                }
+            }
+            return taskList.ToArray();
+        }
+
+        static void LoadUDP() {
+            
+        }
+
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
 #if DEBUG
@@ -526,7 +596,8 @@ namespace Simulator {
             //SketchAppr();
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
-            taskList = taskList.Concat(SketchCompareAppr());
+            //taskList = taskList.Concat(SketchCompareAppr());
+            taskList = taskList.Concat(Prototype());
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));
             //taskList = taskList.Concat(BenchMark("CountMax", false));
