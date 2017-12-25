@@ -15,12 +15,12 @@ FILE = "./fss_benchmark.txt"
 set output OUTDIR."fss_test".SUBFIX
 
 plot \
-0.127452167145049 with lines lw 4 title 'CountMax',\
-FILE u 1:2 with linespoints pointtype 4 lw 4 pointsize 2.3 title 'FSS'
+FILE u 1:2 with linespoints pointtype 4 linetype 2 lw 4 pointsize 2.3 title 'FSS',\
+0.127452167145049 with lines lw 4 title 'CountMax',
 
 FILE = "./fss_benchmark_hy.txt"
 set output OUTDIR."fss_test_hy".SUBFIX
 
 plot \
 0.0493651739323575 with lines lw 4 title 'CountMax (k=1000)',\
-FILE u 1:2 with linespoints pointtype 4 lw 4 pointsize 2.3 title 'FSS'
+FILE u 1:2 with linespoints pointtype 4 linetype 2 lw 4 pointsize 2.3 title 'FSS',
