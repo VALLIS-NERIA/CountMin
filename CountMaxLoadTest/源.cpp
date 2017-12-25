@@ -140,7 +140,7 @@ public:
 
 int main() {
     const auto count = 10000000;
-    const auto cm = new count_max(3000, 2);
+    const auto cm = new count_max(3000, 1);
     const auto flows = flow_gen(count);
     const auto traffics = traffic_gen(count);
     LARGE_INTEGER begin, end, frequency;
