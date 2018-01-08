@@ -65,6 +65,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="countmax.c" />
+    <ClCompile Include="minheap.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="countmax.h" />

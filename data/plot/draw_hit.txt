@@ -13,15 +13,15 @@ set xrange[0:3100]
 set xtics ("0" 0, "10" 1000, "20" 2000, "30" 3000)
 
 set xl 'k ({/Symbol \264}10^2)'
-set yl 'Tracked Traffic Ratio'
+set yl 'Traffic Monitor Ratio'
 
 FILE = "./".TOPO."_k_hit_".KPARA.".txt"
 set output OUTDIR.TOPO."_k_hit_".KPARA.SUBFIX
 
 plot \
-FILE u 1:2 with linespoints pointtype 2 linetype 1 lw 4 pointsize 2.3 title 'CountMax',\
-FILE u 1:4 with linespoints pointtype 6 linetype 2 lw 4 pointsize 2.3 title 'CountSketch',\
-FILE u 1:3 with linespoints pointtype 4 linetype 2 lw 4 pointsize 2.3 title 'FSS',\
+FILE u 1:2 with linespoints pointtype 2 dt  1 lw 4 pointsize 2 title 'CountMax',\
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 4 pointsize 2 title 'CountSketch',\
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 4 pointsize 2 title 'FSS',\
 
 # set yl 'Elephant Hit Rate'
 
@@ -39,16 +39,15 @@ set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1)
 set xrange[50000:300000]
 set xtics ("5" 50000,"10" 100000, "20" 200000, "30" 300000)
 
-set xl 'Flow Number ({/Symbol \264}10^4)'
-set yl 'Tracked Traffic Ratio'
+set xl 'Number of Flows ({/Symbol \264}10^4)'
 
 FILE = "./".TOPO."_flow_hit_".FPARA.".txt"
 set output OUTDIR.TOPO."_flow_hit_".FPARA.SUBFIX
 
 plot \
-FILE u 1:2 with linespoints pointtype 2 linetype 1 lw 4 pointsize 2.3 title 'CountMax',\
-FILE u 1:4 with linespoints pointtype 6 linetype 2 lw 4 pointsize 2.3 title 'CountSketch',\
-FILE u 1:3 with linespoints pointtype 4 linetype 2 lw 4 pointsize 2.3 title 'FSS',
+FILE u 1:2 with linespoints pointtype 2 dt  1 lw 4 pointsize 2 title 'CountMax',\
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 4 pointsize 2 title 'CountSketch',\
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 4 pointsize 2 title 'FSS',
 
 # set yl 'Elephant Hit Rate'
 

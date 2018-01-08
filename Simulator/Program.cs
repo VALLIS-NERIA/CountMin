@@ -681,6 +681,7 @@ namespace Simulator {
         }
 
         private static List<double> HHFilter(IEnumerable<(double, double)> list, double threshold) {
+            var fs = new FileStream("tt", FileMode.Append);
             var list1 = list;
             var total = list.Sum(t => t.Item1);
             list1 = list1.OrderByDescending(t => t.Item1);
