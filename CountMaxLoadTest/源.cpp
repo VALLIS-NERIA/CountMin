@@ -1,7 +1,7 @@
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <time.h>
+//#include <stddef.h>
+//#include <stdint.h>
+//#include <stdlib.h>
+//#include <time.h>
 #include <windows.h>
 #include <iostream>
 #include <vector>
@@ -158,8 +158,8 @@ void do_work(const int d) {
 }
 
 int main() {
-    std::vector<int> v = { 1,2,3,4,5,6,7,8,9,10 };
-    for (const auto d : v) {
+    //std::vector<int> v = { 1,2,3,4,5,6,7,8,9,10 };
+    for (auto d = 1; d < 16;d++) {
         do_work(d);
     }
     system("pause");

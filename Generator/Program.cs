@@ -71,6 +71,16 @@ namespace Generator {
             return taskList.ToArray();
         }
 
+        static void ExpGen() {
+            var topo_list = new[] {"fattree6", "hyperx7"};
+            var count_list = new[] {50000,100000,200000,300000};
+            foreach (string topos in topo_list) {
+                foreach (int count in count_list) {
+                    var fn = $"exp_{count}_{topos}_OSPF.json";
+
+                }
+            }
+        }
         static void InitGen() {
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree6", "hyperx7"};

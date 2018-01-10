@@ -9,7 +9,7 @@ set key right center box
 
 set yrange[0:1600]
 set ytics ("0" 0, "500" 500, "1000" 1000, "1500" 1500)
-set xrange[0:3100]
+set xrange[0:3000]
 set xtics ("0" 0, "10" 1000, "20" 2000, "30" 3000)
 
 set xl 'k ({/Symbol \264}10^2)'

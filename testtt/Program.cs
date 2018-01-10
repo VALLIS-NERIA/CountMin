@@ -39,7 +39,7 @@ namespace testtt {
             //anal.WriteLine("topo, k, flow_count, threshold, cm_avg, cm_min, cm_max, cm_hit, cm_time, cs_avg, cs_min, cs_max, cs_hit, cs_time");
             foreach (string topos in new[]{"hyperx9"}) {
                 foreach (int k in new[]{5000}) {
-                    foreach (int d in new[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) {
+                    for (int d =1;d<16;d++) {
 
 
                         var topo = LoadTopo(topos + ".json");

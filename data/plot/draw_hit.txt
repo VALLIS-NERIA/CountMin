@@ -7,9 +7,9 @@ SUBFIX = ".eps"
 
 set key right bottom box
 
-set yrange[0:1.1]
+set yrange[0:1]
 set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1)
-set xrange[0:3100]
+set xrange[0:3000]
 set xtics ("0" 0, "10" 1000, "20" 2000, "30" 3000)
 
 set xl 'k ({/Symbol \264}10^2)'
@@ -34,7 +34,7 @@ FILE u 1:3 with linespoints pointtype 4 dt 3 lw 4 pointsize 2 title 'FSS',\
 
 set key left bottom box
 
-set yrange[0:1.1]
+set yrange[0:1]
 set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1)
 set xrange[50000:300000]
 set xtics ("5" 50000,"10" 100000, "20" 200000, "30" 300000)

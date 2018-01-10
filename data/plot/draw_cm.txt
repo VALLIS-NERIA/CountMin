@@ -4,10 +4,10 @@ SUBFIX = ".eps"
 
 set key left top box
 
-set yrange[0:330]
-set ytics ("0" 0, "100" 100, "200" 200, "300" 300)
-set xrange[1:10]
-set xtics ("1" 1, "5" 5, "10" 10)
+set yrange[0:550]
+set ytics ("0" 0, "100" 100, "200" 200, "300" 300, "400" 400, "500" 500)
+set xrange[1:15]
+set xtics ("1" 1, "5" 5, "10" 10, "15" 15)
 
 set xl 'd'
 set yl 'CPU Cycle per Packet'
@@ -16,10 +16,10 @@ FILE = "./cm_d_cpu.txt"
 set output OUTDIR."cm_d_cpu".SUBFIX
 
 plot \
-FILE u 1:2 with linespoints pointtype 4 dt  1 lw 4 pointsize 2 title 'CountMax',
+FILE u 1:2 with linespoints pointtype 4 dt  2 lw 4 pointsize 2 title 'CountMax',
 
 set key right top box
-set yrange[0.25:0.8]
+set yrange[0.2:0.8]
 set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1)
 set yl 'Average Estimation Error'
 
@@ -27,4 +27,4 @@ FILE = "./cm_d_err.txt"
 set output OUTDIR."cm_d_err".SUBFIX
 
 plot \
-FILE u 1:2 with linespoints pointtype 4 dt  1 lw 4 pointsize 2 title 'CountMax',
+FILE u 1:2 with linespoints pointtype 4 dt  2 lw 4 pointsize 2 title 'CountMax',
