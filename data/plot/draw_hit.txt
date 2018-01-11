@@ -13,7 +13,7 @@ set xrange[0:3000]
 set xtics ("0" 0, "10" 1000, "20" 2000, "30" 3000)
 
 set xl 'k ({/Symbol \264}10^2)'
-set yl 'Traffic Monitor Ratio'
+set yl 'Monitored Traffic Ratio'
 
 FILE = "./".TOPO."_k_hit_".KPARA.".txt"
 set output OUTDIR.TOPO."_k_hit_".KPARA.SUBFIX
