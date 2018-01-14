@@ -11,7 +11,8 @@ struct flow_key {
     __u16 dstport;
     __u16 protocol;
 };
-static int flow_key_hash(struct flow_key* key);
+static int flow_key_hash_old(struct flow_key* key);
+static int flow_key_hash(struct flow_key* key, uint bits);
 static int flow_key_equal(struct flow_key* lhs, struct flow_key* rhs);
 
 #endif

@@ -25,27 +25,30 @@ void delete_countmax_line(struct countmax_line* this) {
 
 void countmax_line_update(struct countmax_line* this, struct flow_key* key,
                           elemtype value) {
-    size_t index = (uint32_t)flow_key_hash(key) % this->w;
+    size_t index = (uint32_t)flow_key_hash_old(key) % this->w;
     struct flow_key* current_key = &(this->keys[index]);
     if (flow_key_equal(key, current_key)) {
         this->counters[index] += value;
-    } else {
+    }
+    else {
         elemtype now = this->counters[index];
         if (value > now) {
             this->counters[index] = value - now;
             this->keys[index] = *key;
-        } else {
+        }
+        else {
             this->counters[index] -= value;
         }
     }
 }
 
 elemtype countmax_line_query(struct countmax_line* this, struct flow_key* key) {
-    size_t index = (uint32_t)flow_key_hash(key) % this->w;
+    size_t index = (uint32_t)flow_key_hash_old(key) % this->w;
     struct flow_key* current_key = &(this->keys[index]);
     if (flow_key_equal(key, current_key)) {
         return this->counters[index];
-    } else {
+    }
+    else {
         return 0;
     }
 }
@@ -64,7 +67,7 @@ struct countmax_sketch* new_countmax_sketch(int w, int d) {
 }
 
 void delete_countmax_sketch(struct countmax_sketch* this) {
-    for (int i = 0; i < this->d;i++){
+    for (int i = 0; i < this->d; i++) {
         delete_countmax_line(this->lines[i]);
     }
     kfree(this->lines);
@@ -104,8 +107,8 @@ struct countmax_manager* new_countmax_manager(int w, int d, int sw_count) {
     return manager;
 }
 
-static void delete_countmax_manager(struct countmax_manager* this){
-    for (int i = 0; i < this->sw_count;i++){
+static void delete_countmax_manager(struct countmax_manager* this) {
+    for (int i = 0; i < this->sw_count; i++) {
         delete_countmax_sketch(this->sketches[i]);
     }
     kfree(this->sketches);
@@ -130,5 +133,3 @@ elemtype countmax_manager_query(struct countmax_manager* this,
     }
     return max;
 }
-
-
