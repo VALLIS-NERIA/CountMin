@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <linux/slab.h>
 
 #ifndef SUCCESS
 #define SUCCESS 0
@@ -29,7 +29,7 @@ struct min_heap new_min_heap(int max_size) {
     struct min_heap hp;
     hp.size = 0;
     hp.max_size = max_size;
-    hp.elem = malloc(hp.max_size);
+    hp.elem = kzalloc(hp.max_size,GFP_ATOMIC);
     return hp;
 }
 

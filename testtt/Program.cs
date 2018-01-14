@@ -41,6 +41,10 @@ namespace testtt {
                 foreach (int k in new[]{5000}) {
                     for (int d =1;d<16;d++) {
 
+                        int.TryParse("12", out int x);
+
+                        int y;
+                        int.TryParse("12", out y);
 
                         var topo = LoadTopo(topos + ".json");
                         var fin = $"zipf_100000_{topos}_OSPF.json";

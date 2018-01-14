@@ -61,16 +61,29 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <IncludePath>D:\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Code\Repos\countMin\linux-headers-4.2.0-27\include;D:\Code\Repos\countMin\linux-headers-4.2.0-27\arch\x86\include;D:\Code\Repos\countMin\linux-headers-4.2.0-27\include\uapi;D:\Code\Repos\countMin\linux-headers-4.2.0-27\arch\x86\include\uapi;D:\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="countmax.c" />
+    <ClCompile Include="flow_key.c" />
+    <ClCompile Include="hashtable.c" />
+    <ClCompile Include="hash_heap.c" />
+    <ClCompile Include="main.c" />
     <ClCompile Include="minheap.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="countmax.h" />
+    <ClInclude Include="flow_key.h" />
+    <ClInclude Include="hash_heap.h" />
   </ItemGroup>
-  <ItemDefinitionGroup />
+  <ItemGroup>
+    <None Include="Makefile" />
+  </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <ClCompile>
+      <PreprocessorDefinitions>__KERNEL__;__GNUC__;CONFIG_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
