@@ -1,0 +1,39 @@
+KPARA = ARG1
+FPARA = ARG2
+TOPO = ARG3
+OUTDIR = "./fig/"
+SUBFIX = ".eps"
+#reset
+
+set key left bottom box
+
+set yrange[0.4:1]
+set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1)
+set xrange[100:300]
+set xtics ("1" 100, "2" 2000, "3" 300)
+
+set xl 'k ({/Symbol \264}10^2)'
+set yl 'Max. Link Load Ratio'
+
+FILE = "./".TOPO."_k_load_".KPARA.".txt"
+set output OUTDIR.TOPO."_k_load_".KPARA.SUBFIX
+
+plot \
+FILE u 1:2 with linespoints pointtype 2 dt  1 lw 4 pointsize 2 title 'CountMax',\
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 4 pointsize 2 title 'FSS',\
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 4 pointsize 2 title 'CountSketch'
+
+set key right bottom box
+
+set xrange[1000:3000]
+set xtics ("1" 1000, "2" 2000, "3" 3000)
+
+set xl 'Number of Flows ({/Symbol \264}10^3)'
+
+FILE = "./".TOPO."_flow_load_".FPARA.".txt"
+set output OUTDIR.TOPO."_flow_load_".FPARA.SUBFIX
+
+plot \
+FILE u 1:2 with linespoints pointtype 2 dt  1 lw 4 pointsize 2 title 'CountMax',\
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 4 pointsize 2 title 'FSS',\
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 4 pointsize 2 title 'CountSketch'

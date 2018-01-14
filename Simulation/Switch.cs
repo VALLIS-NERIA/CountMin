@@ -99,6 +99,7 @@ namespace Simulation {
 
         public void ClearFlow() {
             this.LinkLoad.Clear();
+            this.PassingFlows.Clear();
         }
 
         public void AssignFlow(Flow f) {

@@ -58,7 +58,7 @@ namespace Simulation {
                 foreach (Flow flow in flowSet) {
                     // DO NOT REROUTE BLANK FLOWS
                     ++Counter;
-                    if (flow.Traffic <= 5) {
+                    if (flow.Traffic <= 1) {
                         CounterSkipped++;
                         continue;
                     }

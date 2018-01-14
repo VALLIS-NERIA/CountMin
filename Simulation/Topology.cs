@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MathNet.Numerics.Distributions;
 using Newtonsoft.Json;
 
 namespace Simulation {
@@ -29,7 +30,10 @@ namespace Simulation {
             return json;
         }
 
-        public Switch RandomSwitch() { return Switches[(rnd.Next(Switches.Count) / 2) * 2]; }
+        public Switch RandomSwitch() { return Switches[rnd.Next(Switches.Count)]; }
+
+        public Switch RandomSrc() { return Switches[Zipf.Sample(1, 4) - 1]; }
+        public Switch RandomDst() { return Switches[Zipf.Sample(1, 4) - 1 + 4]; }
 
         public IEnumerable<KeyValuePair<(Switch src, Switch dst), double>> FetchLinkLoad() {
             var list = (IEnumerable<KeyValuePair<(Switch src, Switch dst), double>>) new Dictionary<(Switch src, Switch dst), double>();

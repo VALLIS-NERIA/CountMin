@@ -1,8 +1,10 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <time.h>
+//#include <stddef.h>
+//#include <stdint.h>
+//#include <stdlib.h>
+//#include <time.h>
 #include <windows.h>
 #include <iostream>
+#include <vector>
 typedef uint32_t elemtype;
 
 struct flow_key {
@@ -138,19 +140,27 @@ public:
     }
 };
 
-int main() {
-    const auto count = 10000000;
-    const auto cm = new count_max(3000, 2);
-    const auto flows = flow_gen(count);
-    const auto traffics = traffic_gen(count);
+const auto count = 10000000;
+const auto flows = flow_gen(count);
+const auto traffics = traffic_gen(count);
+
+void do_work(const int d) {
+    const auto cm = new count_max(3000, d);
     LARGE_INTEGER begin, end, frequency;
-    std::cout << "begin" << std::endl;
+    //std::cout << "begin" << std::endl;
     QueryPerformanceCounter(&begin);
     QueryPerformanceFrequency(&frequency);
     for (int i = 0; i < count; ++i) {
         cm->update(&flows[i], traffics[i]);
     }
     QueryPerformanceCounter(&end);
-    std::cout << (double)(end.QuadPart - begin.QuadPart) * 1000 / count << std::endl;
+    std::cout << d << '\t' << (double)(end.QuadPart - begin.QuadPart) * 1000 / count << std::endl;
+}
+
+int main() {
+    //std::vector<int> v = { 1,2,3,4,5,6,7,8,9,10 };
+    for (auto d = 1; d < 16;d++) {
+        do_work(d);
+    }
     system("pause");
 }

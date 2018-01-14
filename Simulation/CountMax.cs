@@ -135,9 +135,9 @@ namespace Simulation {
 
         private void _update(Flow flow, ElemType value) {
             foreach (Switch sw in flow) {
-                //if (!data.ContainsKey(sw)) {
-                //    data.Add(sw, new SwitchSketch(W, d));
-                //}
+                if (!data.ContainsKey(sw)) {
+                    data.Add(sw, new SwitchSketch(W, d));
+                }
                 data[sw].Update(flow, value);
             }
         }
