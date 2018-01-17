@@ -61,7 +61,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <IncludePath>D:\Code\Repos\countMin\linux-headers-4.2.0-27\include;D:\Code\Repos\countMin\linux-headers-4.2.0-27\arch\x86\include;D:\Code\Repos\countMin\linux-headers-4.2.0-27\include\uapi;D:\Code\Repos\countMin\linux-headers-4.2.0-27\arch\x86\include\uapi;D:\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi</IncludePath>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="countmax.c" />
