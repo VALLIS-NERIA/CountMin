@@ -65,7 +65,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="countmax.c" />
-    <ClCompile Include="flow_key.c" />
     <ClCompile Include="hashtable.c" />
     <ClCompile Include="hash_heap.c" />
     <ClCompile Include="main.c" />

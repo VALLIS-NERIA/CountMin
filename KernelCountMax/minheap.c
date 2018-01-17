@@ -11,7 +11,10 @@
 #define RCHILD(x) 2 * x + 2
 #define PARENT(x) (x - 1) / 2
 
+typedef s64 heap_data;
+
 struct node {
+    int key;
     int data;
 };
 
@@ -25,11 +28,11 @@ struct min_heap {
 /*
 Function to initialize the min heap with size = 0
 */
-struct min_heap new_min_heap(int max_size) {
-    struct min_heap hp;
-    hp.size = 0;
-    hp.max_size = max_size;
-    hp.elem = kzalloc(hp.max_size,GFP_ATOMIC);
+struct min_heap* new_min_heap(int max_size) {
+    struct min_heap *hp = kzalloc(sizeof(struct min_heap),GFP_KERNEL);
+    hp->size = 0;
+    hp->max_size = max_size;
+    hp->elem = kzalloc(hp->max_size,GFP_ATOMIC);
     return hp;
 }
 
@@ -123,12 +126,7 @@ void min_heap_extract(struct min_heap* hp) {
     if (hp->size) {
         //printf("Deleting struct node %d\n\n", hp->elem[0].data);
         hp->elem[0] = hp->elem[--(hp->size)];
-        hp->elem = realloc(hp->elem, hp->size * sizeof(struct node));
         min_heap_heapify(hp, 0);
-    }
-    else {
-        //printf("\nMin Heap is empty!\n");
-        free(hp->elem);
     }
 }
 
@@ -161,7 +159,7 @@ int getMaxNode(struct min_heap* hp, int i) {
 Function to clear the memory allocated for the min heap
 */
 void delete_min_heap(struct min_heap* hp) {
-    free(hp->elem);
+    kfree(hp->elem);
 }
 
 
