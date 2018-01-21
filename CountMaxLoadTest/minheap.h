@@ -1,0 +1,180 @@
+#ifndef MY_HASH_HEAP
+#define MY_HASH_HEAP
+
+#include "hashtable.h"
+#include <math.h>
+#ifndef SUCCESS
+#define SUCCESS 0
+#endif
+
+#define HEAP_EXCCED -1
+#define HEAP_UNINTAILIZED -2
+
+#define LCHILD(x) 2 * x + 1
+#define RCHILD(x) 2 * x + 2
+#define PARENT(x) (x - 1) / 2
+
+typedef elemtype heap_data;
+
+struct node {
+    struct flow_key* key;
+    heap_data data;
+};
+
+struct hash_heap {
+    struct flow_key* keys;
+    struct hash_table* indexes;
+    int size;
+    int max_size;
+    struct node* elem;
+};
+
+
+/*
+Function to initialize the min heap with size = 0
+*/
+struct hash_heap* new_hash_heap(int max_size) {
+    struct hash_heap *this = new(struct hash_heap);
+    this->keys = newarr(struct flow_key, max_size);
+    int bit = (uint32_t)log2f(max_size) + 1;
+    this->indexes = new_hash_table(bit < 10 ? bit : 10);
+    this->size = 0;
+    this->max_size = max_size-1;
+    this->elem = newarr(struct node, max_size);
+    return this;
+}
+
+
+/*
+Function to hash_heap_node_swap data within two nodes of the min heap using pointers
+*/
+void hash_heap_swap(struct hash_heap* this,int index1, int index2) {
+    struct node tmp = this->elem[index1];
+    this->elem[index1] = this->elem[index2];
+    this->elem[index2] = tmp;
+    //ht_value tmpv;
+    hash_table_set(this->indexes, this->elem[index1].key, index1);
+    hash_table_set(this->indexes, this->elem[index2].key, index2);
+}
+
+
+/*
+Heapify function is used to make sure that the heap property is never violated
+In case of deletion of a struct node, or creating a min heap from an array, heap property
+may be violated. In such cases, hash_heap_heapify function can be called to make sure that
+heap property is never violated
+*/
+void hash_heap_heapify(struct hash_heap* this, int i) {
+    int smallest = (LCHILD(i) < this->size && this->elem[LCHILD(i)].data < this->elem[i].data) ? LCHILD(i) : i;
+    if (RCHILD(i) < this->size && this->elem[RCHILD(i)].data < this->elem[smallest].data) {
+        smallest = RCHILD(i);
+    }
+    if (smallest != i) {
+        hash_heap_swap(this, i, smallest);
+        hash_heap_heapify(this, smallest);
+    }
+}
+
+/*
+Function to insert a struct node into the min heap, by allocating space for that struct node in the
+heap and also making sure that the heap property and shape propety are never violated.
+*/
+static int hash_heap_insert(struct hash_heap* this,struct flow_key* key, heap_data data) {
+
+    if (!this->elem)return HEAP_UNINTAILIZED;
+    if (this->size == this->max_size)return HEAP_EXCCED;
+
+    // copy the key
+    struct flow_key* t_key_a = newarr(struct flow_key,5);
+    struct flow_key* t_key = &t_key_a[0];
+    *t_key = *key;
+    
+    struct node nd;
+    nd.key = t_key;
+    nd.data = data;
+    kfree(t_key_a);
+    //kfree(t_key);
+    int i = (this->size)++;
+    while (i && nd.data < this->elem[PARENT(i)].data) {
+        this->elem[i] = this->elem[PARENT(i)];
+        i = PARENT(i);
+    }
+    this->elem[i] = nd;
+
+    // insert to hashtable
+    hash_table_add(this->indexes, t_key, i);
+    return SUCCESS;
+}
+
+heap_data inline hash_heap_peek(struct hash_heap* this) {
+    if (this->size) {
+        int last = (this->size) - 1;
+        return this->elem[last].data;
+    }
+    return 0;
+}
+
+inline struct flow_key* hash_heap_peek_key(struct hash_heap* this) {
+    if (this->size) {
+        int last = (this->size) - 1;
+        return this->elem[last].key;
+    }
+    return NULL;
+}
+
+/*
+Function to delete a struct node from the min heap
+It shall remove the root struct node, and place the last struct node in its place
+and then call hash_heap_heapify function to make sure that the heap property
+is never violated
+*/
+static void hash_heap_extract(struct hash_heap* this) {
+    if (this->size) {
+        //printf("Deleting struct node %d\n\n", this->elem[0].data);
+        int last = --(this->size);
+        this->elem[0] = this->elem[last];
+        hash_table_remove(this->indexes, this->elem[last].key);
+        hash_heap_heapify(this, 0);
+    }
+}
+
+int hash_heap_update_or_insert(struct hash_heap* this,struct flow_key* key, heap_data value) {
+    uint32_t index;
+    int ret = hash_table_get(this->indexes, key, &index);
+    if (ret == SUCCESS) {
+        this->elem[index].data = value;
+        hash_heap_heapify(this, 0);
+        return SUCCESS;
+    }
+    else if(ret==HT_ERR_KEY_NOT_FOUND) {
+        return hash_heap_insert(this, key, value);
+    }
+    return -255;
+}
+
+int hash_heap_inc(struct hash_heap* this, struct flow_key* key, heap_data value) {
+    uint32_t index;
+    int ret = hash_table_get(this->indexes, key, &index);
+    if (ret == SUCCESS) {
+        this->elem[index].data += value;
+        hash_heap_heapify(this, 0);
+        return SUCCESS;
+    }
+    else if (ret == HT_ERR_KEY_NOT_FOUND) {
+        return hash_heap_insert(this, key, value);
+    }
+    return -255;
+}
+
+
+/*
+Function to clear the memory allocated for the min heap
+*/
+void delete_hash_heap(struct hash_heap* this) {
+    delete_hash_table(this->indexes);
+    kfree(this->elem);
+    kfree(this->keys);
+    kfree(this);
+}
+
+#endif

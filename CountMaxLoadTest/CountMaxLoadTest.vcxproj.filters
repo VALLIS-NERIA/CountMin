@@ -15,8 +15,31 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="源.cpp">
+    <ClCompile Include="countsketch.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="hashtable.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="minheap.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="util.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="fss.c">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="源.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="countmax.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="flow_key.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

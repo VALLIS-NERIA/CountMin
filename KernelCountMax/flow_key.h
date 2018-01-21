@@ -1,36 +1,46 @@
 #ifndef FLOW_KEY_H
 #define FLOW_KEY_H 1
-// #include <stdint.h>
-// #include <stdbool.h>
-// #include <stddef.h>
-#include <linux/types.h>
-#include <linux/hash.h>
+
+#include "util.h"
+
 struct flow_key {
-    __u32 srcip;
-    __u32 dstip;
-    __u16 srcport;
-    __u16 dstport;
-    __u16 protocol;
+    uint32_t srcip;
+    uint32_t dstip;
+    uint16_t srcport;
+    uint16_t dstport;
+    uint16_t protocol;
 };
-static inline uint flow_key_hash_old(struct flow_key* key) {
+
+inline struct flow_key rand_flow_key() {
+    struct flow_key key;
+    key.srcip = rand_uint32();
+    key.dstip = rand_uint32();
+    key.srcport = rand_uint16();
+    key.dstport = rand_uint16();
+    key.protocol = rand_uint16();
+    return key;
+}
+
+
+inline uint32_t flow_key_hash_old(struct flow_key* key) {
     int hashCode = (int)key->srcip;
     hashCode = (hashCode * 397) ^ (int)key->dstip;
     hashCode = (hashCode * 397) ^ (int)key->srcport;
     hashCode = (hashCode * 397) ^ (int)key->dstport;
     hashCode = (hashCode * 397) ^ (int)key->protocol;
-    return (uint)hashCode;
+    return (uint32_t)hashCode;
 }
 
-static inline uint flow_key_hash(struct flow_key* key, uint bits) {
-    uint hash = hash_32(key->srcip, bits);
-    hash ^= hash_32(key->dstip, bits);
-    hash ^= hash_32(key->srcport, bits);
-    hash ^= hash_32(key->dstport, bits);
-    hash ^= hash_32(key->protocol, bits);
-    return hash >> (32 - bits);
+inline uint32_t flow_key_hash(struct flow_key* key, uint32_t bits) {
+    uint32_t hash = sketch_hash_32(key->srcip, bits);
+    hash ^= sketch_hash_32(key->dstip, bits);
+    hash ^= sketch_hash_32(key->srcport, bits);
+    hash ^= sketch_hash_32(key->dstport, bits);
+    hash ^= sketch_hash_32(key->protocol, bits);
+    return hash;
 }
 
-static inline int flow_key_equal(struct flow_key* lhs, struct flow_key* rhs) {
+inline int flow_key_equal(struct flow_key* lhs, struct flow_key* rhs) {
     return lhs->srcip == rhs->srcip && lhs->dstip == rhs->dstip && lhs->srcport == rhs->srcport &&
         lhs->dstport == rhs->dstport && lhs->protocol == rhs->protocol;
 }

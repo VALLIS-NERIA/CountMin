@@ -203,14 +203,16 @@ namespace Simulator {
                 foreach (string topos in topo_list) {
                     foreach (var _flow_count in count_list) {
                         foreach (int k in k_list) {
+                            if(k!=1000&&_flow_count!=200000)continue;;
                             var topo = LoadTopo(topos + ".json");
-                            //var fin = $"zipf_{_flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
-                            var fin = $"udp12w_{topos}_OSPF.json";
-                            //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
+                            var fin = $"zipf_{_flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                            //var fin = $"udp12w_{topos}_OSPF.json";
+                            fin = $"REROUTE_CountMax_k{k}_{fin}.json";
                             var flowSet = LoadFlow(fin, topo);
                             var flow_count = flowSet.Count;
                             var cm = new CountMin(k, 2);
-                            var sv = new SketchVisor((int) (1.2 * k));
+                            var sv = new FSpaceSaving((int) (1 * k));
+                            var cs = new CountSketch((int) (1 * k),2);
                             var t00 = DateTime.Now;
                             foreach (Flow flow in flowSet) {
                                 cm.Update(flow, (ElemType) flow.Traffic);
@@ -221,9 +223,15 @@ namespace Simulator {
                                 sv.Update(flow, (ElemType) flow.Traffic);
                             }
                             var t11 = DateTime.Now;
+                            var t20 = DateTime.Now;
+                            foreach (Flow flow in flowSet) {
+                                cs.Update(flow, (ElemType) flow.Traffic);
+                            }
+                            var t21 = DateTime.Now;
                             var t0 = t01 - t00;
                             var t1 = t11 - t10;
-                            Console.WriteLine($"{topos,10}{flow_count,10}{k,10}{(int) (1.2 * k),10}{t0.TotalMilliseconds,15}{t1.TotalMilliseconds,15}");
+                            var t2 = t21 - t20;
+                            Console.WriteLine($"{topos,10},{flow_count,10},{k,10},{t0.TotalMilliseconds,15},{t1.TotalMilliseconds,15},{t2.TotalMilliseconds,15}");
                         }
                     }
                 }
@@ -237,13 +245,14 @@ namespace Simulator {
             //anal.WriteLine("topo, k, flow_count, threshold, cm_avg, cm_hit, cm_time, sv_avg, sv_hit, sv_time, cs_avg, cs_hit, cs_time, cm_min, cm_max, sv_min, sv_max, cs_min, cs_max");
             foreach (RoutingAlgorithm algorithm in algo_list) {
                 foreach (string topos in topo_list) {
-                    //foreach (var flow_count in count_list) 
+                    foreach (var flow_count in count_list) 
                         {
                         foreach (int k in k_list) {
+                            if (k != 1000 && flow_count != 200000) continue;
                             void _do() {
-                                var flow_count = "udp12w";
+                                //var flow_count = "zipf_200000";
                                 var topo = LoadTopo(topos + ".json");
-                                var fin = $"{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                                var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
                                 //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
                                 //var fin = $"udp12w_{topos}_OSPF.json";
                                 var flowSet = LoadFlow(fin, topo);
@@ -322,8 +331,8 @@ namespace Simulator {
                                 }
                                 //
                                 //
-                                foreach (var threshold in new[] {0.001,0.0005,0.0001,0.00001}.Reverse()) {
-                                    var ll_cm = HHFilter(list_cm,  threshold);
+                                foreach (var threshold in new[] {0.05}.Reverse()) {
+                                    var ll_cm = Filter(list_cm,  threshold);
                                     var count_cm = ll_cm.Count(d => d != 0);
                                     var t_cm = list_cm.Sum(t => t.Item1);
                                     //Console.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
@@ -333,17 +342,17 @@ namespace Simulator {
                                     //var count_sv = ll_sv.Count(d => d != 0);
                                     //anal_sv.WriteLine($"{threshold} , {ll_sv.Average()} , {ll_sv.Min()} , {ll_sv.Max()} , {count_sv}");
 
-                                    var ll_cs = HHFilter(list_cs,  threshold);
+                                    var ll_cs = Filter(list_cs,  threshold);
                                     var count_cs = ll_cs.Count(d => d != 0);
                                     var t_cs = list_cs.Where(t => t.Item2 != 0).Sum(t => t.Item1);
                                     //anal_cs.WriteLine($"{threshold} , {ll_cs.Average()} , {ll_cs.Min()} , {ll_cs.Max()} , {count_cs}");
-                                    var ll_fss = HHFilter(list_fss,  threshold);
+                                    var ll_fss = Filter(list_fss,  threshold);
                                     var count_fss = ll_fss.Count(d => d != 0);
                                     var t_fss = list_fss.Where(t => t.Item2 != 0).Sum(t => t.Item1);
 
                                     var total = list_cm.Sum(t => t.Item1);
                                     //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
-                                    Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()}");
+                                    Console.WriteLine($"\r{topos}, {flow_count}, {k},{ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()}");
                                     //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold} , {ll_fss.Average()} , {ll_fss.Min()} , {ll_fss.Max()} , {count_fss}                                ");
                                     //    //lock (anal) {
                                     //    //    anal.Write($"{topos},{k},{flow_count},{threshold} ,");
@@ -597,14 +606,14 @@ namespace Simulator {
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
             //taskList = taskList.Concat(SketchCompareAppr());
-            taskList = taskList.Concat(Prototype());
+            //taskList = taskList.Concat(Prototype());
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));
             //taskList = taskList.Concat(BenchMark("CountMax", false));
             //taskList = taskList.Concat(BenchMark("SketchVisor", false));
             //taskList = taskList.Concat(BenchMark("CountSketch", false));
             //SketchAppr();
-            //SketchCompareTime();
+            SketchCompareTime();
             var taskArray = taskList.ToArray();
             RunTask(taskArray);
         }

@@ -26,6 +26,34 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="countsketch.h">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="flow_key.h">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="hashtable.h">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="hashheap.h">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="util.h">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="countmax.h">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="fss.h">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x86'">CompileAsC</CompileAs>
+    </ClCompile>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{360539e1-5a96-4dd9-a50a-fd2750a058db}</ProjectGuid>
     <Keyword>Linux</Keyword>
@@ -61,23 +89,8 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi</IncludePath>
+    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
   </PropertyGroup>
-  <ItemGroup>
-    <ClCompile Include="countmax.c" />
-    <ClCompile Include="hashtable.c" />
-    <ClCompile Include="hash_heap.c" />
-    <ClCompile Include="main.c" />
-    <ClCompile Include="minheap.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="countmax.h" />
-    <ClInclude Include="flow_key.h" />
-    <ClInclude Include="hash_heap.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Makefile" />
-  </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <ClCompile>
       <PreprocessorDefinitions>__KERNEL__;__GNUC__;CONFIG_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>

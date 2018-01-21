@@ -6,7 +6,7 @@ SUBFIX = ".eps"
 
 set key right top box
 
-set yrange[0:1]
+set yrange[0:0.5]
 set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1, "1.25" 1.25)
 set xrange[0:3000]
 set xtics ("0" 0, "10" 1000, "20" 2000, "30" 3000)

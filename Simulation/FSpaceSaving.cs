@@ -6,20 +6,19 @@ using System.Threading.Tasks;
 using ElemType = System.Int64;
 
 namespace Simulation {
-    public class FSpaceSaving:ISketch<Flow,ElemType> {
+    public class FSpaceSaving : ISketch<Flow, ElemType> {
         private delegate uint HashFunc(object obj);
 
         private static Random rnd = new Random();
 
-        public class Entry:IComparable<Entry> {
+        public class Entry : IComparable<Entry> {
             public ElemType f;
             public ElemType e;
 
-            public static Entry operator +(Entry left, (ElemType _f, ElemType _e) right) {
-                return new Entry {e = left.e + right._e, f = left.f + right._f};
-            }
+            public static Entry operator +(Entry left, (ElemType _f, ElemType _e) right) { return new Entry {e = left.e + right._e, f = left.f + right._f}; }
 
             public static implicit operator Entry((ElemType _f, ElemType _e) right) { return new Entry {e = right._e, f = right._f}; }
+
             public int CompareTo(Entry other) { return this.f.CompareTo(other.f); }
         }
 
@@ -36,17 +35,17 @@ namespace Simulation {
                 this.h = _w;
                 this.m = _w;
                 this.Alpha = new ElemType[h];
-                this.Counter=new int[h];
+                this.Counter = new int[h];
                 this.hash = hashFactory(rnd.Next());
                 this.heap = new MinHeap<object, Entry>();
             }
-            
+
             // not necessary in simulation
             // private Mutex mutex;
             private HashFunc hashFactory(int seed) { return o => (uint) ((uint) (o.GetHashCode() ^ seed) % this.h); }
-            
+
             public void Update(object key, ElemType value) {
-                var _u = this.heap.Count != 0 ? this.heap.Min.Value.f : 0;
+                var _u = this.heap.Count < this.m ? 0 : this.heap.Min.Value.f;
                 int index = (int) hash(key);
                 if (this.Counter[index] != 0) {
                     if (this.heap.ContainsKey(key)) {
@@ -54,26 +53,26 @@ namespace Simulation {
                         return;
                     }
                 }
+                this.Alpha[index] += value;
+
+                if (this.Alpha[index] > _u) {
+                    if (this.heap.Count == m) {
+                        var min = this.heap.ExtractMin();
+                        var kndex = this.hash(min.Key);
+                        this.Counter[kndex] -= 1;
+                        this.Alpha[kndex] = min.Value.f;
+                    }
+                    this.heap.Add(key, new Entry {f = this.Alpha[index], e = this.Alpha[index]});
+                    this.Counter[index] += 1;
+                }
                 else {
-                    if (this.Alpha[index] + value > _u) {
-                        if (this.heap.Count == m) {
-                            var min = this.heap.ExtractMin();
-                            var kndex = this.hash(min.Key);
-                            this.Counter[kndex] -= 1;
-                            this.Alpha[kndex] = min.Value.f;
-                        }
-                        this.heap.Add(key, new Entry {f = this.Alpha[index] + value, e = this.Alpha[index]});
-                        this.Counter[index] += 1;
-                    }
-                    else {
-                        this.Alpha[index] += value;
-                    }
+                    //this.Alpha[index] += value;
                 }
             }
 
             public ElemType Query(object key) {
                 if (this.heap.ContainsKey(key)) {
-                    var ret = this.heap[key].f /*- this.heap[key].e / 2*/;
+                    var ret = this.heap[key].f /*- this.heap[key].e*/;
                     return ret > 0 ? ret : 0;
                 }
                 else {
@@ -103,7 +102,7 @@ namespace Simulation {
 
         public void Update(Flow flow, ElemType value) {
             var t = value;
-            var packet = 1750000;
+            var packet = 30000000;
             while (t > 0) {
                 _update(flow, t > packet ? packet : t);
                 t -= packet;
@@ -124,13 +123,13 @@ namespace Simulation {
             foreach (var sw in flow) {
                 var q = this.data[sw].Query(flow);
                 if (q != 0) {
-                    results .Add(q);
+                    results.Add(q);
                 }
             }
             if (results.Count == 0) {
                 return 0;
             }
-            return results.Min();
+            return (ElemType)results.Average();
             // remove zeros
             results = (from d in results where d != 0 select d).ToList();
             // if only zeros return zero
