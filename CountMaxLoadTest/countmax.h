@@ -48,10 +48,10 @@ void delete_countmax_line(struct countmax_line* this) {
 
 inline void countmax_line_update(struct countmax_line* this, struct flow_key* key,
                           elemtype value) {
-    size_t index = (uint32_t)flow_key_hash(key, 16) % this->w;
-    //struct flow_key* current_key = &(this->keys[index]);
-    //if (flow_key_equal_val(*key, this->keys[index])) {
-    if (key==this->keys[index]) {
+    size_t index = (uint32_t)flow_key_hash(key, 14) % this->w;
+    struct flow_key* current_key = &(this->keys[index]);
+    if (flow_key_equal(key, current_key)) {
+    //if (key==this->keys[index]) {
         this->counters[index] += value;
     }
     else {

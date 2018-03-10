@@ -177,7 +177,7 @@ static void do_work_3(const int w) {
     heap_count_2 = 0;
     ht_count = 0;
     int packet = 0;
-    auto cs = new_countmax_sketch(w, 1);
+    auto cs = new_countmax_sketch(w, 2);
     LARGE_INTEGER begin, end, frequency;
     //std::cout << "begin" << std::endl;
     QueryPerformanceFrequency(&frequency);
@@ -236,6 +236,7 @@ void do_work_2(const int w) {
     //std::cout << d << '\t' << (double)(end.QuadPart - begin.QuadPart) * 1000 / count << std::endl;
 }
 
+elemtype foo = 0;
 void do_work_1(const int w) {
     heap_count_1 = 0;
     heap_count_2 = 0;
@@ -246,23 +247,22 @@ void do_work_1(const int w) {
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&begin);
     for (int i = 0; i < count; ++i) {
-        if (i == 71) {
-            i = 71;
-        }
-        elemtype t0 = traffics[i];
-        elemtype t = t0;
-        while (t0) {
-            t = t0 > 500 ? 500 : t0;
-            t0 -= t;
-            fss_sketch_update(cs, &flows[i], t);
-            ++packet;
-        }
+        //elemtype t0 = traffics[i];
+        uint32_t h = flow_key_hash(&flows[i], 14);
+        foo += h;
+        //elemtype t = t0;
+        //while (t0) {
+        //    t = t0 > 500 ? 500 : t0;
+        //    t0 -= t;
+        //    fss_sketch_update(cs, &flows[i], t);
+        //    ++packet;
+        //}
         //cm->update(&flows[i], traffics[i]);
     }
     QueryPerformanceCounter(&end);
     //printf("%d\t%lf\t%d\t%d\n", w, (double)(end.QuadPart - begin.QuadPart) * 1000 / packet, packet,ht_count);
     //printf("%d\t%lf\t", w, (double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
-    fss_cpu += (int)((double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
+    fss_cpu += (int)((double)(end.QuadPart - begin.QuadPart) * 1000 / count);
     delete_fss_sketch(cs);
 
     //do_work_2(w);
@@ -276,12 +276,12 @@ void do_work(const int w) {
     cm_cpu = 0;
     for(int i=0;i<work_round;i++) {
 
-        do_work_1(w);
+        //do_work_1(w);
 
     }
     for (int i = 0; i<work_round; i++) {
 
-        do_work_2(w);
+       // do_work_2(w);
 
     }
     for (int i = 0; i<work_round; i++) {

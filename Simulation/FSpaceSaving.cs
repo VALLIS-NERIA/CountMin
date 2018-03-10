@@ -53,20 +53,20 @@ namespace Simulation {
                         return;
                     }
                 }
-                this.Alpha[index] += value;
+                //this.Alpha[index] += value;
 
-                if (this.Alpha[index] > _u) {
+                if (this.Alpha[index] +value> _u) {
                     if (this.heap.Count == m) {
                         var min = this.heap.ExtractMin();
                         var kndex = this.hash(min.Key);
                         this.Counter[kndex] -= 1;
                         this.Alpha[kndex] = min.Value.f;
                     }
-                    this.heap.Add(key, new Entry {f = this.Alpha[index], e = this.Alpha[index]});
+                    this.heap.Add(key, new Entry {f = this.Alpha[index]+value, e = this.Alpha[index]});
                     this.Counter[index] += 1;
                 }
                 else {
-                    //this.Alpha[index] += value;
+                    this.Alpha[index] += value;
                 }
             }
 

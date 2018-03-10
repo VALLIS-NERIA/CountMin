@@ -167,7 +167,7 @@ namespace Generator {
         }
 
 
-        static void Main() {
+        static void Ma_in() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //test();
             //return;
@@ -227,7 +227,7 @@ namespace Generator {
             return topo;
         }
 
-        static void MMain(string[] args) {
+        static void Main(string[] args) {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //var topo = FatTreeGen(6);
             //var tJ = topo.ToTopologyJson();
@@ -238,68 +238,42 @@ namespace Generator {
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree8", "hyperx9"};
             var algo_list = new RoutingAlgorithm[] {OSPF.FindPath};
-            var count_list = new[] {50000, 100000, 200000, 300000};
+            var count_list = new[] {150000,250000};
             //var flow_count = 10000;
 
             var taskList = new List<Task>();
-            foreach (string topos in topo_list) {
-                var topo = LoadTopo(topos + ".json");
-                var table = new Floyd(topo).Calc();
-                var fn = $"udp12w_{topos}_OSPF.json";
-                var traffics = new List<int>();
-                using (var sr = new StreamReader("udp new.txt")) {
-                    while (!sr.EndOfStream) {
-                        traffics.Add(int.Parse(sr.ReadLine()));
-                    }
-                }
-                var flowSet = new List<Flow>();
-                foreach (int traffic in traffics) {
-                    var src = topo.RandomSwitch();
-                    var dst = topo.RandomSwitch();
-                    while (dst == src) {
-                        dst = topo.RandomSwitch();
-                    }
-                    var route = table[src][dst];
-                    var f = new Flow(route, traffic);
-                    flowSet.Add(f);
-                }
-                using (var sw = new StreamWriter(fn)) {
-                    sw.Write(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
-                }
-                foreach (RoutingAlgorithm algorithm in algo_list) {
-                    foreach (var flow_count in count_list) {
-                        //void _do() {
-                        //    var flowSet = new List<Flow>();
-                        //    var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
-                        //    Console.WriteLine($"invoking {fn}");
-                        //    var samples = Zipf.Samples(1, flow_count);
-                        //    var traffics = new int[flow_count];
-                        //    foreach (int sample in samples) {
-                        //        traffics[sample] += 1;
-                        //    }
-                        //    for (int i = 0; i < flow_count; i++) {
-                        //        traffics[i] += 1;
-                        //    }
-                        //    for (int i = 0; i < flow_count; ++i) {
-                        //        var src = topo.RandomSwitch();
-                        //        var dst = topo.RandomSwitch();
-                        //        while (dst == src) {
-                        //            dst = topo.RandomSwitch();
-                        //        }
-                        //        var route = table[src][dst];
-                        //        //traffics.Count(t => t == i);
-                        //        var f = new Flow(route, traffics[i]);
-                        //        flowSet.Add(f);
-                        //        //Console.Write($"\r{i}");
-                        //    }
-                        //    using (var sw = new StreamWriter(fn))
-                        //        sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
-                        //    Console.WriteLine($"FINISHED {fn}");
-                        //}
+                foreach (var flow_count in count_list) {
+                    //var traffics = new int[flow_count];
+                    //Zipf.Samples(traffics, 1, flow_count);
+                    var traffics = Zipf.Samples(1, flow_count);
+                foreach (string topos in topo_list) {
+                    var topo = LoadTopo(topos + ".json");
+                    var table = new Floyd(topo).Calc();
+                    var fn = $"zipf_{flow_count}_{topos}_OSPF.json";
+                    //var traffics = new List<int>();
+                    //using (var sr = new StreamReader("udp new.txt")) {
+                    //    while (!sr.EndOfStream) {
+                    //        traffics.Add(int.Parse(sr.ReadLine()));
+                    //    }
+                    //}
 
-                        //var task = new Task(_do);
-                        //taskList.Add(task);
-                        //task.Start();
+
+
+                    var flowSet = new List<Flow>();
+                    foreach (int traffic in traffics) {
+                        if (flowSet.Count == flow_count) break;
+                        var src = topo.RandomSwitch();
+                        var dst = topo.RandomSwitch();
+                        while (dst == src) {
+                            dst = topo.RandomSwitch();
+                        }
+                        var route = table[src][dst];
+                        var f = new Flow(route, traffic);
+                        flowSet.Add(f);
+                        Console.Write($"\r{flowSet.Count}");
+                    }
+                    using (var sw = new StreamWriter(fn)) {
+                        sw.Write(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
                     }
                 }
                 Task.WaitAll(taskList.ToArray());

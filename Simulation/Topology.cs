@@ -30,7 +30,7 @@ namespace Simulation {
             return json;
         }
 
-        public Switch RandomSwitch() { return Switches[rnd.Next(Switches.Count)]; }
+        public Switch RandomSwitch() { return Switches[rnd.Next(Switches.Count / 2 * 2)]; }
 
         public Switch RandomSrc() { return Switches[Zipf.Sample(1, 4) - 1]; }
         public Switch RandomDst() { return Switches[Zipf.Sample(1, 4) - 1 + 4]; }
