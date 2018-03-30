@@ -26,6 +26,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CountMaxLoadTest", "CountMa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KernelCountMax", "KernelCountMax\KernelCountMax.vcxproj", "{360539E1-5A96-4DD9-A50A-FD2750A058DB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KernelQueue", "KernelQueue\KernelQueue.vcxproj", "{0784178C-9D54-4832-A468-F55E0636F538}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -187,6 +189,20 @@ Global
 		{360539E1-5A96-4DD9-A50A-FD2750A058DB}.Release|x64.Build.0 = Release|x64
 		{360539E1-5A96-4DD9-A50A-FD2750A058DB}.Release|x86.ActiveCfg = Release|x86
 		{360539E1-5A96-4DD9-A50A-FD2750A058DB}.Release|x86.Build.0 = Release|x86
+		{0784178C-9D54-4832-A468-F55E0636F538}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{0784178C-9D54-4832-A468-F55E0636F538}.Debug|ARM.ActiveCfg = Debug|ARM
+		{0784178C-9D54-4832-A468-F55E0636F538}.Debug|ARM.Build.0 = Debug|ARM
+		{0784178C-9D54-4832-A468-F55E0636F538}.Debug|x64.ActiveCfg = Debug|x64
+		{0784178C-9D54-4832-A468-F55E0636F538}.Debug|x64.Build.0 = Debug|x64
+		{0784178C-9D54-4832-A468-F55E0636F538}.Debug|x86.ActiveCfg = Debug|x86
+		{0784178C-9D54-4832-A468-F55E0636F538}.Debug|x86.Build.0 = Debug|x86
+		{0784178C-9D54-4832-A468-F55E0636F538}.Release|Any CPU.ActiveCfg = Release|x86
+		{0784178C-9D54-4832-A468-F55E0636F538}.Release|ARM.ActiveCfg = Release|ARM
+		{0784178C-9D54-4832-A468-F55E0636F538}.Release|ARM.Build.0 = Release|ARM
+		{0784178C-9D54-4832-A468-F55E0636F538}.Release|x64.ActiveCfg = Release|x64
+		{0784178C-9D54-4832-A468-F55E0636F538}.Release|x64.Build.0 = Release|x64
+		{0784178C-9D54-4832-A468-F55E0636F538}.Release|x86.ActiveCfg = Release|x86
+		{0784178C-9D54-4832-A468-F55E0636F538}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
