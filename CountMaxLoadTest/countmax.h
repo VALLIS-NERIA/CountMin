@@ -7,7 +7,7 @@
 struct countmax_line {
     size_t w;
     uint32_t mask;
-    struct flow_key** keys;
+    struct flow_key* keys;
     elemtype* counters;
 };
 
@@ -32,7 +32,7 @@ struct countmax_manager {
 struct countmax_line* new_countmax_line(int w) {
     struct countmax_line* line = new(struct countmax_line);
     line->counters = newarr(elemtype, w);
-    line->keys = newarr(struct flow_key*, w);
+    line->keys = newarr(struct flow_key, w);
     line->w = w;
     uint32_t rand = rand_uint32();
     //get_random_bytes(&rand, sizeof(uint32_t));
@@ -48,17 +48,17 @@ void delete_countmax_line(struct countmax_line* this) {
 
 inline void countmax_line_update(struct countmax_line* this, struct flow_key* key,
                           elemtype value) {
-    size_t index = (uint32_t)flow_key_hash(key, 16) % this->w;
-    //struct flow_key* current_key = &(this->keys[index]);
-    //if (flow_key_equal_val(*key, this->keys[index])) {
-    if (key==this->keys[index]) {
+    size_t index = (uint32_t)flow_key_hash(*key, 16) % this->w;
+    struct flow_key current_key = (this->keys[index]);
+    if (flow_key_equal(*key, current_key)) {
+    //if (key==this->keys[index]) {
         this->counters[index] += value;
     }
     else {
         elemtype now = this->counters[index];
         if (value > now) {
             this->counters[index] = value - now;
-            this->keys[index] = key;
+            this->keys[index] = *key;
         }
         else {
             this->counters[index] -= value;
@@ -67,9 +67,9 @@ inline void countmax_line_update(struct countmax_line* this, struct flow_key* ke
 }
 
 inline elemtype countmax_line_query(struct countmax_line* this, struct flow_key* key) {
-    size_t index = (uint32_t)flow_key_hash(key,16) % this->w;
-    struct flow_key* current_key = &(this->keys[index]);
-    if (flow_key_equal(key, current_key)) {
+    size_t index = (uint32_t)flow_key_hash(*key,16) % this->w;
+    struct flow_key current_key = (this->keys[index]);
+    if (flow_key_equal(*key, current_key)) {
         return this->counters[index];
     }
     else {
@@ -100,7 +100,7 @@ void delete_countmax_sketch(struct countmax_sketch* this) {
     kfree(this);
 }
 
-void countmax_sketch_update(struct countmax_sketch* this, struct flow_key* key,
+inline void countmax_sketch_update(struct countmax_sketch* this, struct flow_key* key,
                             elemtype value) {
     int i = 0;
     for (i = 0; i < this->d; i++) {

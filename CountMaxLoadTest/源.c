@@ -154,7 +154,7 @@ struct flow_key* flow_gen(size_t size) {
 
 elemtype* traffic_gen(size_t size) {
     elemtype* array = (elemtype*)malloc(sizeof(elemtype)*size);
-    FILE* f = fopen("D:\\真我的文档\\VSProjects\\countMin\\CountMaxLoadTest\\udp.txt", "r");
+    FILE* f = fopen("D:\\Code\\Repos\\countMin\\CountMaxLoadTest\\udp.txt", "r");
     char buf[30];
     for (int i = 0; i < size; ++i) {
         fgets(buf, 30, f);
@@ -177,7 +177,7 @@ static void do_work_3(const int w) {
     heap_count_2 = 0;
     ht_count = 0;
     int packet = 0;
-    auto cs = new_countmax_sketch(w, 1);
+    auto cs = new_countmax_sketch(w, 2);
     LARGE_INTEGER begin, end, frequency;
     //std::cout << "begin" << std::endl;
     QueryPerformanceFrequency(&frequency);
@@ -220,7 +220,7 @@ void do_work_2(const int w) {
         while (t0) {
             t = t0 > 500 ? 500 : t0;
             t0 -= t;
-            countsketch_sketch_update(cs, &flows[i], t);
+            countsketch_sketch_update(cs, flows[i], t);
             ++packet;
         }
         //cm->update(&flows[i], traffics[i]);
@@ -254,7 +254,7 @@ void do_work_1(const int w) {
         while (t0) {
             t = t0 > 500 ? 500 : t0;
             t0 -= t;
-            fss_sketch_update(cs, &flows[i], t);
+            fss_sketch_update(cs, flows[i], t);
             ++packet;
         }
         //cm->update(&flows[i], traffics[i]);
@@ -341,7 +341,7 @@ int main() {
     traffics = traffic_gen(count);
     //std::vector<int> v = { 1,2,3,4,5,6,7,8,9,10 };
     do_work(500);
-    for (int d = 500; d < 4000; d += 500) {
+    for (int d = 500; d < 10000; d += 1500) {
     do_work(d);
     }
     //for (int d = 500; d < 4000; d += 500) {

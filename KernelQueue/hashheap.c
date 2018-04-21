@@ -3,8 +3,8 @@
 struct hash_heap* new_hash_heap(int max_size) {
     struct hash_heap* this = new(struct hash_heap);
     this->keys = newarr(struct flow_key, max_size);
-    this->indexes = new_hash_table(3);
-    //this->indexes = new_hash_table(log2(max_size) + 0);
+    //this->indexes = new_hash_table(3);
+    this->indexes = new_hash_table(log2(max_size) + 0);
     this->size = 0;
     this->max_size = max_size - 1;
     this->elem = newarr(struct node, max_size);

@@ -45,14 +45,14 @@ void delete_countsketch_line(struct countsketch_line* this) {
     kfree(this);
 }
 
-void countsketch_line_update(struct countsketch_line* this, struct flow_key* key, elemtype value) {
+void countsketch_line_update(struct countsketch_line* this, struct flow_key key, elemtype value) {
     size_t index = ((uint32_t)flow_key_hash_old(key) ^ this->mask) % this->w;
     //struct flow_key* current_key = &(this->keys[index]);
     int sign = (flow_key_hash(key, 1) ^ this->mask) == 0 ? 1 : -1;
     this->counters[index] += sign * value;
 }
 
-inline elemtype countsketch_line_query(struct countsketch_line* this, struct flow_key* key) {
+inline elemtype countsketch_line_query(struct countsketch_line* this, struct flow_key key) {
     size_t index = ((uint32_t)flow_key_hash_old(key) ^ this->mask) % this->w;
     int sign = (flow_key_hash(key, 1) ^ this->mask) == 0 ? 1 : -1;
     return this->counters[index] * sign;
@@ -82,28 +82,30 @@ void delete_countsketch_sketch(struct countsketch_sketch* this) {
 
 
 
-elemtype countsketch_sketch_forcequery(struct countsketch_sketch* this, struct flow_key* key) {
+elemtype countsketch_sketch_forcequery(struct countsketch_sketch* this, struct flow_key key) {
     //elemtype* results = newarr(elemtype, this->d);
-    return countsketch_line_query(this->lines[0], key);
-    elemtype results[10];
+    //return countsketch_line_query(this->lines[0], key);
+    //elemtype results[10];
+    elemtype sum = 0;
     for (int i = 0; i < this->d; i++) {
-        elemtype q = countsketch_line_query(this->lines[i], key);
-        results[i] = q;
+        sum += countsketch_line_query(this->lines[i], key);
+        //results[i] = q;
     }
-    my_sort(results, this->d, sizeof(elemtype), cmpelem);
-    if (this->d % 2 == 0) {
-        elemtype a= (results[this->d / 2] + results[this->d / 2 - 1]) / 2;
-        //kfree(results);
-        return a;
-    }
-    else {
-        elemtype a = results[(this->d - 1) / 2];
-        //kfree(results);
-        return a;
-    }
+    return sum / this->d;
+    //my_sort(results, this->d, sizeof(elemtype), cmpelem);
+    //if (this->d % 2 == 0) {
+    //    elemtype a= (results[this->d / 2] + results[this->d / 2 - 1]) / 2;
+    //    //kfree(results);
+    //    return a;
+    //}
+    //else {
+    //    elemtype a = results[(this->d - 1) / 2];
+    //    //kfree(results);
+    //    return a;
+    //}
 }
 
-elemtype countsketch_sketch_query(struct countsketch_sketch* this, struct flow_key* key) {
+elemtype countsketch_sketch_query(struct countsketch_sketch* this, struct flow_key key) {
     elemtype tvalue;
     if (hash_table_get(this->heap->indexes, key, &tvalue) == HT_ERR_KEY_NOT_FOUND) {
         return 0;
@@ -111,7 +113,7 @@ elemtype countsketch_sketch_query(struct countsketch_sketch* this, struct flow_k
     return countsketch_sketch_forcequery(this, key);
 }
 
-void countsketch_sketch_update(struct countsketch_sketch* this, struct flow_key* key, elemtype value) {
+void countsketch_sketch_update(struct countsketch_sketch* this, struct flow_key key, elemtype value) {
     for (int i = 0; i < this->d; i++) {
         countsketch_line_update(this->lines[i], key, value);
     }
@@ -135,6 +137,26 @@ void countsketch_sketch_update(struct countsketch_sketch* this, struct flow_key*
         }
     }
 }
+
+
+
+
+#ifndef NULL
+static struct countsketch_line* new_countsketch_line(int w);
+static void countsketch_line_update(struct countsketch_line* this, struct flow_key* key, elemtype value);
+static elemtype countsketch_line_query(struct countsketch_line* this, struct flow_key* key);
+static void delete_countsketch_line(struct countsketch_line* this);
+
+static struct countsketch_sketch* new_countsketch_sketch(int w, int d);
+static void countsketch_sketch_update(struct countsketch_sketch* this, struct flow_key* key, elemtype value);
+static elemtype countsketch_sketch_query(struct countsketch_sketch* this, struct flow_key* key);
+static void delete_countsketch_sketch(struct countsketch_sketch* this);
+
+static struct countsketch_manager* new_countsketch_manager(int w, int d, int sw_count);
+static void countsketch_manager_update(struct countsketch_manager* this, int sw_id, struct flow_key* key,
+    elemtype value);
+static elemtype countsketch_manager_query(struct countsketch_manager* this, struct flow_key* key);
+static void delete_countsketch_manager(struct countsketch_manager* this);
 
 /*              */
 
@@ -175,23 +197,5 @@ elemtype countsketch_manager_query(struct countsketch_manager* this, struct flow
     }
     return max;
 }
-
-
-#ifndef NULL
-static struct countsketch_line* new_countsketch_line(int w);
-static void countsketch_line_update(struct countsketch_line* this, struct flow_key* key, elemtype value);
-static elemtype countsketch_line_query(struct countsketch_line* this, struct flow_key* key);
-static void delete_countsketch_line(struct countsketch_line* this);
-
-static struct countsketch_sketch* new_countsketch_sketch(int w, int d);
-static void countsketch_sketch_update(struct countsketch_sketch* this, struct flow_key* key, elemtype value);
-static elemtype countsketch_sketch_query(struct countsketch_sketch* this, struct flow_key* key);
-static void delete_countsketch_sketch(struct countsketch_sketch* this);
-
-static struct countsketch_manager* new_countsketch_manager(int w, int d, int sw_count);
-static void countsketch_manager_update(struct countsketch_manager* this, int sw_id, struct flow_key* key,
-    elemtype value);
-static elemtype countsketch_manager_query(struct countsketch_manager* this, struct flow_key* key);
-static void delete_countsketch_manager(struct countsketch_manager* this);
 #endif
 #endif

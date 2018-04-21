@@ -48,7 +48,7 @@ void delete_fss_sketch(struct fss_sketch* this) {
 
 
 
-elemtype fss_sketch_query(struct fss_sketch* this, struct flow_key* key) {
+elemtype fss_sketch_query(struct fss_sketch* this, struct flow_key key) {
     ht_value tvalue;
     if (hash_table_get(this->heap->indexes, key, &tvalue) == HT_ERR_KEY_NOT_FOUND) {
         return 0;
@@ -58,7 +58,7 @@ elemtype fss_sketch_query(struct fss_sketch* this, struct flow_key* key) {
 int heap_count_1 = 0;
 int heap_count_2 = 0;
 
-void fss_sketch_update(struct fss_sketch* this, struct flow_key* key, elemtype value) {
+void fss_sketch_update(struct fss_sketch* this, struct flow_key key, elemtype value) {
     elemtype min = hash_heap_peek(this->heap);
     elemtype u = this->heap->size < this->heap->max_size ? 0:min;
     size_t index = ((uint32_t)flow_key_hash_old(key) ^ this->mask) % this->w;
@@ -81,7 +81,7 @@ void fss_sketch_update(struct fss_sketch* this, struct flow_key* key, elemtype v
         }
         else {
             hash_heap_extract(this->heap);
-            struct flow_key* kmin = hash_heap_peek_key(this->heap);
+            struct flow_key kmin = hash_heap_peek_key(this->heap);
             size_t index_m = ((uint32_t)flow_key_hash_old(kmin) ^ this->mask) % this->w;
             this->hash_counters[index_m] -= 1;
             this->counters[index] = min;
@@ -92,6 +92,25 @@ void fss_sketch_update(struct fss_sketch* this, struct flow_key* key, elemtype v
         this->hash_counters[index] += 1;
     }    
 }
+
+
+#ifndef NULL
+static struct fss_line* new_fss_line(int w);
+static void fss_line_update(struct fss_line* this, struct flow_key* key, elemtype value);
+static elemtype fss_line_query(struct fss_line* this, struct flow_key* key);
+static void delete_fss_line(struct fss_line* this);
+
+static struct fss_sketch* new_fss_sketch(int w, int d);
+static void fss_sketch_update(struct fss_sketch* this, struct flow_key* key, elemtype value);
+static elemtype fss_sketch_query(struct fss_sketch* this, struct flow_key* key);
+static void delete_fss_sketch(struct fss_sketch* this);
+
+static struct fss_manager* new_fss_manager(int w, int d, int sw_count);
+static void fss_manager_update(struct fss_manager* this, int sw_id, struct flow_key* key,
+    elemtype value);
+static elemtype fss_manager_query(struct fss_manager* this, struct flow_key* key);
+static void delete_fss_manager(struct fss_manager* this);
+
 
 /*              */
 
@@ -133,23 +152,6 @@ elemtype fss_manager_query(struct fss_manager* this, struct flow_key* key) {
     return max;
 }
 
-
-#ifndef NULL
-static struct fss_line* new_fss_line(int w);
-static void fss_line_update(struct fss_line* this, struct flow_key* key, elemtype value);
-static elemtype fss_line_query(struct fss_line* this, struct flow_key* key);
-static void delete_fss_line(struct fss_line* this);
-
-static struct fss_sketch* new_fss_sketch(int w, int d);
-static void fss_sketch_update(struct fss_sketch* this, struct flow_key* key, elemtype value);
-static elemtype fss_sketch_query(struct fss_sketch* this, struct flow_key* key);
-static void delete_fss_sketch(struct fss_sketch* this);
-
-static struct fss_manager* new_fss_manager(int w, int d, int sw_count);
-static void fss_manager_update(struct fss_manager* this, int sw_id, struct flow_key* key,
-    elemtype value);
-static elemtype fss_manager_query(struct fss_manager* this, struct flow_key* key);
-static void delete_fss_manager(struct fss_manager* this);
 #endif
 
 #endif

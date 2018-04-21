@@ -17,12 +17,12 @@
 typedef elemtype heap_data;
 
 struct node {
-    struct flow_key* key;
+    struct flow_key key;
     heap_data data;
 };
 
 struct hash_heap {
-    struct flow_key* keys;
+    //struct flow_key* keys;
     struct hash_table* indexes;
     int size;
     int max_size;
@@ -35,9 +35,9 @@ Function to initialize the min heap with size = 0
 */
 struct hash_heap* new_hash_heap(int max_size) {
     struct hash_heap *this = new(struct hash_heap);
-    this->keys = newarr(struct flow_key, max_size);
-    int bit = (uint32_t)log2f(max_size) + 1;
-    this->indexes = new_hash_table(bit < 10 ? bit : 10);
+    //this->keys = newarr(struct flow_key, max_size);
+    int bit = (uint32_t)log2f(max_size);
+    this->indexes = new_hash_table( bit );
     this->size = 0;
     this->max_size = max_size-1;
     this->elem = newarr(struct node, max_size);
@@ -79,20 +79,17 @@ void hash_heap_heapify(struct hash_heap* this, int i) {
 Function to insert a struct node into the min heap, by allocating space for that struct node in the
 heap and also making sure that the heap property and shape propety are never violated.
 */
-static int hash_heap_insert(struct hash_heap* this,struct flow_key* key, heap_data data) {
+static int hash_heap_insert(struct hash_heap* this,struct flow_key key, heap_data data) {
 
     if (!this->elem)return HEAP_UNINTAILIZED;
     if (this->size == this->max_size)return HEAP_EXCCED;
 
     // copy the key
-    struct flow_key* t_key_a = newarr(struct flow_key,5);
-    struct flow_key* t_key = &t_key_a[0];
-    *t_key = *key;
-    
+    //struct flow_key* t_key_a = newarr(struct flow_key, 5);
     struct node nd;
-    nd.key = t_key;
+    nd.key = key;
     nd.data = data;
-    kfree(t_key_a);
+    //kfree(t_key_a);
     //kfree(t_key);
     int i = (this->size)++;
     while (i && nd.data < this->elem[PARENT(i)].data) {
@@ -102,7 +99,7 @@ static int hash_heap_insert(struct hash_heap* this,struct flow_key* key, heap_da
     this->elem[i] = nd;
 
     // insert to hashtable
-    hash_table_add(this->indexes, t_key, i);
+    hash_table_add(this->indexes, key, i);
     return SUCCESS;
 }
 
@@ -114,12 +111,13 @@ heap_data inline hash_heap_peek(struct hash_heap* this) {
     return 0;
 }
 
-inline struct flow_key* hash_heap_peek_key(struct hash_heap* this) {
+inline struct flow_key hash_heap_peek_key(struct hash_heap* this) {
+    struct flow_key k;
     if (this->size) {
         int last = (this->size) - 1;
         return this->elem[last].key;
     }
-    return NULL;
+    return k;
 }
 
 /*
@@ -138,7 +136,7 @@ static void hash_heap_extract(struct hash_heap* this) {
     }
 }
 
-int hash_heap_update_or_insert(struct hash_heap* this,struct flow_key* key, heap_data value) {
+int hash_heap_update_or_insert(struct hash_heap* this,struct flow_key key, heap_data value) {
     uint32_t index;
     int ret = hash_table_get(this->indexes, key, &index);
     if (ret == SUCCESS) {
@@ -152,7 +150,7 @@ int hash_heap_update_or_insert(struct hash_heap* this,struct flow_key* key, heap
     return -255;
 }
 
-int hash_heap_inc(struct hash_heap* this, struct flow_key* key, heap_data value) {
+int hash_heap_inc(struct hash_heap* this, struct flow_key key, heap_data value) {
     uint32_t index;
     int ret = hash_table_get(this->indexes, key, &index);
     if (ret == SUCCESS) {
@@ -173,7 +171,7 @@ Function to clear the memory allocated for the min heap
 void delete_hash_heap(struct hash_heap* this) {
     delete_hash_table(this->indexes);
     kfree(this->elem);
-    kfree(this->keys);
+    //kfree(this->keys);
     kfree(this);
 }
 
