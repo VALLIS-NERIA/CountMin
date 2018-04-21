@@ -47,7 +47,7 @@ namespace testtt {
                         int.TryParse("12", out y);
 
                         var topo = LoadTopo(topos + ".json");
-                        var fin = $"zipf_100000_{topos}_OSPF.json";
+                        var fin = $"zipf_50000_{topos}_OSPF.json";
                         var flowSet = LoadFlow(fin, topo);
                         var flow_count = flowSet.Count;
                         var cm = new CountMax.SwitchSketch(k, d);

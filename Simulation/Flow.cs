@@ -105,6 +105,8 @@ namespace Simulation {
             }
         }
 
+        //public override 
+
         public IEnumerator<Switch> GetEnumerator() { return Nodes.GetEnumerator(); }
         public override string ToString() { return $"{IngressSwitch} =={Traffic:F1}=> {OutgressSwitch}"; }
 

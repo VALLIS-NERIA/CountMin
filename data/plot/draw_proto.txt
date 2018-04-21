@@ -7,8 +7,8 @@ SUBFIX = ".eps"
 
 set key left bottom box
 
-set yrange[0.4:1]
-set ytics ("0" 0, "0.25" 0.25, "0.5" 0.5, "0.75" 0.75, "1" 1)
+set yrange[0.6:1]
+set ytics ("0.5" 0.5, "0.6" 0.6, "0.7" 0.7, "0.8" 0.8, "0.9" 0.9, "1" 1)
 set xrange[100:300]
 set xtics ("1" 100, "2" 2000, "3" 300)
 

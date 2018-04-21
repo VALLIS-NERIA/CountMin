@@ -25,7 +25,7 @@ namespace Simulation {
                 countOld = Counter;
                 countReOld = CounterRerouted;
                 countSkipOld = CounterSkipped;
-                if (trd < 3 && i < taskArray.Length) {
+                if (trd < 5 && i < taskArray.Length) {
                     Console.Write("\r");
                     taskArray[i++].Start();
                 }
@@ -55,7 +55,9 @@ namespace Simulation {
         public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo, int count = 0) {
             if (count == 0) {
                 int i = 1;
-                foreach (Flow flow in flowSet) {
+                //foreach (Flow flow in flowSet) {
+                for (int j = 0; j < flowSet.Count; j++) { 
+                    var flow = flowSet[j];
                     // DO NOT REROUTE BLANK FLOWS
                     ++Counter;
                     if (flow.Traffic <= 1) {

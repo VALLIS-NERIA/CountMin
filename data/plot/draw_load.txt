@@ -24,7 +24,8 @@ FILE u 1:($4/$5) with linespoints pointtype 6 dt 3 lw 4 pointsize 2 title 'Count
 FILE u 1:($2/$5) with linespoints pointtype 2 dt  1 lw 4 pointsize 2 title 'CountMax',
 
 set key right bottom box
-
+set yrange[0.1:0.9]
+set ytics ("0" 0, "0.2" 0.2, "0.4" 0.4, "0.6" 0.6, "0.8" 0.8, "1" 1)
 set xrange[50000:300000]
 set xtics ("5" 50000,"10" 100000, "20" 200000, "30" 300000)
 

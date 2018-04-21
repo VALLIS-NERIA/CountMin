@@ -1,3 +1,4 @@
+reset
 set size 0.7,0.7
 set terminal postscript eps enhanced "NimbusSanL-Regu" fontfile "uhvr8a.pfb" 24
 set key font ",20"

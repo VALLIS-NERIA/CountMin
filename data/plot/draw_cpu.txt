@@ -2,7 +2,7 @@
 OUTDIR = "./fig/"
 SUBFIX = ".eps"
 #reset
-
+unset key
 set key left top box
 
 set yrange[0:500]
@@ -11,7 +11,7 @@ set xrange[500:3000]
 set xtics ("0" 0, "10" 1000, "20" 2000, "30" 3000)
 
 set xl 'k ({/Symbol \264}10^2)'
-set yl 'Average CPU Cycle per Packet'
+set yl 'CPU Cycle per Packet'
 
 FILE = "./cpu.txt"
 set output OUTDIR."k_cpu_".KPARA.SUBFIX
