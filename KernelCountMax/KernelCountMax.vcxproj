@@ -91,6 +91,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <IncludePath>$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <ClCompile>
       <PreprocessorDefinitions>__KERNEL__;__GNUC__;CONFIG_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>

@@ -9,20 +9,14 @@ blog:           http://blog.csdn.net/u012819339
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <string.h>
-#include <linux/sched.h>
-#include <linux/init.h>
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/types.h>
-#include <linux/sched.h>
 #include <net/sock.h>
-#include <linux/netlink.h>
+//#include <linux/netlink.h>
 #include <unistd.h>
 #include <errno.h>
 #include "md5.h"
 #include <map>
-typedef __int64_t int64;
-typedef __uint32_t uint32;
+typedef int64_t int64;
+typedef uint32_t uint32;
 #define NETLINK_USER 22
 #define USER_MSG (NETLINK_USER + 1)
 #define MSG_LEN 4096
@@ -75,7 +69,7 @@ struct _my_msg {
 
 int opensocket() {
 	int skfd;
-	skfd = socket(AF_NETLINK, SOCK_RAW, USER_MSG);
+	skfd = socket(AF_NETLINK, SOCK_RAW1, USER_MSG);
 	if (skfd == -1) {
 		printf("create socket error...%s\n", strerror(errno));
 		return -1;
@@ -91,7 +85,7 @@ sockaddr_nl bind_local(int skfd) {
 	local.nl_family = AF_NETLINK;
 	local.nl_pid = 50;
 	local.nl_groups = 0;
-	if (bind(skfd, (struct sockaddr *)&local, sizeof(local)) != 0) {
+	if (bind(skfd, (sockaddr *)&local, sizeof(local)) != 0) {
 		printf("bind() error\n");
 		close(skfd);
 		exit(-1);

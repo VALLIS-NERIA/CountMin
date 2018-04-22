@@ -65,16 +65,61 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(IncludePath);$(ISenseIncludePath);D:\Resources\include;D:\Resources\4.12.8-2-ARCH\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\include\x86_64-linux-gnu;D:\include;$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <IncludePath>D:\include\x86_64-linux-gnu;D:\include;$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <IncludePath>D:\include\x86_64-linux-gnu;D:\include;$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>D:\include\x86_64-linux-gnu;D:\include;$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\;$(LinuxIncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <IncludePath>D:\include\x86_64-linux-gnu;D:\include;$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <IncludePath>D:\include\x86_64-linux-gnu;D:\include;$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</IncludePath>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="1.c" />
     <ClCompile Include="md5.cpp" />
     <ClCompile Include="netlink_user.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="md5.h" />
   </ItemGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LinuxIncludePath);$(SolutionDir)\linux-headers-4.2.0-27\include;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include;$(SolutionDir)\linux-headers-4.2.0-27\include\uapi;$(SolutionDir)\linux-headers-4.2.0-27\arch\x86\include\uapi\</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
