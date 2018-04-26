@@ -5,6 +5,8 @@
 #include<linux/inet.h>
 #include<linux/socket.h>
 #include<net/sock.h>
+#include <linux/sched.h>
+#include <linux/kthread.h>
 MODULE_LICENSE("MIT");
 #define MAX_BATCH 1024
 typedef uint64_t elemtype;
@@ -19,6 +21,7 @@ struct flow_key {
     uint16_t protocol;
 };
 
+static int exit;
 
 int get_stat_and_send_back(struct socket* client_sock, char* buf, int len) {
     if (len % sizeof(struct flow_key)) {
@@ -47,7 +50,7 @@ int get_stat_and_send_back(struct socket* client_sock, char* buf, int len) {
     return 0;
 }
 
-int listen(void) {
+int listen(void* arg) {
     const unsigned buf_size = MAX_BATCH * sizeof(struct flow_key);
     struct socket *sock, *client_sock;
     struct sockaddr_in s_addr;
@@ -84,43 +87,60 @@ int listen(void) {
         return ret;
     }
     printk("server:listen ok!\n");
+    //set_current_state(TASK_INTERRUPTIBLE);
+    while (!!kthread_should_stop()) {
+        ret = kernel_accept(sock, &client_sock, O_NONBLOCK);
+        if (ret < 0) {
+            if (ret == -EAGAIN) {
+                usleep_range(5000, 10000);
+                schedule();
+                continue;
+            }
+            else {
+                printk("server:accept error!\n");
+                return ret;
+            }
+        }
+        printk("server: accept ok, Connection Established\n");
 
-    ret = kernel_accept(sock, &client_sock, 10);
-    if (ret < 0) {
-        printk("server:accept error!\n");
-        return ret;
+        /*kmalloc a receive buffer*/
+        char* recvbuf = NULL;
+        recvbuf = kzalloc(buf_size, GFP_KERNEL);
+        if (recvbuf == NULL) {
+            printk("server: recvbuf kmalloc error!\n");
+            return -1;
+        }
+        memset(recvbuf, 0, sizeof(recvbuf));
+
+        /*receive message from client*/
+        struct kvec vec;
+        struct msghdr msg;
+        memset(&vec, 0, sizeof(vec));
+        memset(&msg, 0, sizeof(msg));
+        vec.iov_base = recvbuf;
+        vec.iov_len = 1;
+        ret = kernel_recvmsg(client_sock, &msg, &vec, 1, buf_size, 0); /*receive message*/
+        printk("receive message, length: %d\n", ret);
+        get_stat_and_send_back(client_sock, recvbuf, ret);
+        /*release socket*/
+        sock_release(client_sock);
     }
-    printk("server: accept ok, Connection Established\n");
-
-    /*kmalloc a receive buffer*/
-    char* recvbuf = NULL;
-    recvbuf = kzalloc(buf_size, GFP_KERNEL);
-    if (recvbuf == NULL) {
-        printk("server: recvbuf kmalloc error!\n");
-        return -1;
-    }
-    memset(recvbuf, 0, sizeof(recvbuf));
-
-    /*receive message from client*/
-    struct kvec vec;
-    struct msghdr msg;
-    memset(&vec, 0, sizeof(vec));
-    memset(&msg, 0, sizeof(msg));
-    vec.iov_base = recvbuf;
-    vec.iov_len = 1;
-    ret = kernel_recvmsg(client_sock, &msg, &vec, 1, buf_size, 0); /*receive message*/
-    printk("receive message, length: %d\n", ret);
-    get_stat_and_send_back(client_sock, recvbuf, ret);
-    /*release socket*/
     sock_release(sock);
-    sock_release(client_sock);
     return ret;
     return 0;
 }
 
+struct task_struct* listen_thread;
 
 int init(void) {
+    listen_thread = kthread_run(listen, NULL, "listen thread")
+    ;
+    return 0;
+}
 
+
+int clean(void) {
+    kthread_stop(listen_thread);
     return 0;
 }
 
