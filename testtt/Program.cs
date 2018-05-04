@@ -20,7 +20,8 @@ namespace testtt {
             var uc = new UdpClient(1024);
             var ep = new IPEndPoint(IPAddress.Any, 0);
             var data = uc.Receive(ref ep);
-            ;
+            var s = Encoding.ASCII.GetString(data);
+            Console.WriteLine(s);
         }
     }
 }

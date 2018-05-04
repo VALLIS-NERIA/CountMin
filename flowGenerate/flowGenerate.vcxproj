@@ -63,7 +63,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="rawsock.cpp" />
+    <ClCompile Include="rawsock.c" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
