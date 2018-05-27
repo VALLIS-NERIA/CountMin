@@ -19,9 +19,16 @@ namespace testtt {
         private static void Main() {
             var uc = new UdpClient(1024);
             var ep = new IPEndPoint(IPAddress.Any, 0);
-            var data = uc.Receive(ref ep);
-            var s = Encoding.ASCII.GetString(data);
-            Console.WriteLine(s);
+            int count = 0;
+            //unsigned int 
+            System.UInt32 x = 0;
+            while (true) {
+                var data = uc.Receive(ref ep);
+                ++count;
+                //Console.Write($"\r{++count}");
+                //var s = Encoding.ASCII.GetString(data);
+                //Console.WriteLine(ep.Address.ToString() + s);
+            }
         }
     }
 }

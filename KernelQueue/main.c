@@ -133,6 +133,7 @@ int sketch_report_listen(void* arg) {
         ret = kernel_recvmsg(client_sock, &msg, &vec, 1, buf_size, 0); /*receive message*/
         printk("receive message, length: %d\n", ret);
         get_stat_and_send_back(client_sock, recvbuf, ret, (struct sketch_q*)arg);
+        printk("send ok.\n");
         /*release socket*/
         sock_release(client_sock);
     }
