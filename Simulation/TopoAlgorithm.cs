@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
+using MathNet.Numerics.Random;
 
 namespace Simulation {
     public class Path : List<Switch> {
@@ -87,7 +88,7 @@ namespace Simulation {
     public class Floyd {
         private Dictionary<Switch, Dictionary<Switch, Path>> table;
         private Topology topo;
-
+        static Random rnd = new Mcg59();
         public Floyd(Topology topo) {
             this.topo = topo;
             this.table = new Dictionary<Switch, Dictionary<Switch, Path>>();
@@ -116,6 +117,11 @@ namespace Simulation {
                         var kj = this.table[k][j];
                         if (ij.Length > ik.Length + kj.Length) {
                             this.table[i][j] = this.table[i][k] + this.table[k][j];
+                        }
+                        else if (ij.Length == ik.Length + kj.Length) {
+                            if (rnd.NextDouble() < 0.5) {
+                                this.table[i][j] = this.table[i][k] + this.table[k][j];
+                            }
                         }
                     }
                 }

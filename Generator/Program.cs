@@ -119,10 +119,10 @@ namespace Generator {
         }
 
 
-        static void Main__() {
+        static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //InitGen();
-            var topo = LoadTopo("fattree8.json");
+            var topo = FatTreeGen(8);
             var floyd = new Floyd(topo).Calc();
             var edges = topo.Switches.Where(sw => sw.IsEdge).ToList();
             var len = edges.Count;
@@ -140,7 +140,13 @@ namespace Generator {
                 while (dst == src) {
                     dst = edges[rnd.Next() % len];
                 }
-                flowSet.Add(new Flow(floyd[src][dst]));
+                flowSet.Add(new Flow(floyd[src][dst],traffics[flowCount]));
+            }
+
+            var fj = flowSet.ToCoflowJson(topo);
+            string j = JsonConvert.SerializeObject(fj);
+            using (var sw = new StreamWriter("UDP fattree.json")) {
+                sw.Write(j);
             }
             Console.ReadLine();
         }
@@ -227,7 +233,7 @@ namespace Generator {
             return topo;
         }
 
-        static void Main(string[] args) {
+        static void M___ain(string[] args) {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //var topo = FatTreeGen(6);
             //var tJ = topo.ToTopologyJson();
@@ -365,7 +371,7 @@ namespace Generator {
             public IEnumerable<Switch> GetSwitches() { return Aggr.Concat(Edge); }
         }
 
-        static Topology FatTreeGen(int K) {
+        public static Topology FatTreeGen(int K) {
             if (K % 2 != 0) throw new ArgumentException();
             var n = K / 2;
             var topo = new Topology();

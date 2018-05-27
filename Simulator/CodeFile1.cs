@@ -76,7 +76,7 @@ namespace Simulator {
                 var query_cm = cm.Query(flow);
                 list_cm.Add((flow.Traffic, query_cm));
             }
-            var ll_cm = Filter(list_cm, 0.01);
+            var ll_cm = RelativeErrorOfTop(list_cm, 0.01);
             var count_cm = ll_cm.Count(d => d != 0);
             var t_cm = list_cm.Sum(t => t.Item1);
             Console.WriteLine($"{ll_cm.Average()}  {(t1 - t0).TotalMilliseconds}                                            ");
@@ -94,7 +94,7 @@ namespace Simulator {
                         var query_fss = fss.Query(flow);
                         list_fss.Add((flow.Traffic, query_fss));
                     }
-                    var ll_fss = Filter(list_fss, 0.01);
+                    var ll_fss = RelativeErrorOfTop(list_fss, 0.01);
                     var count_fss = ll_fss.Count(d => d != 0);
                     var t_fss = list_fss.Sum(t => t.Item1);
                     Console.WriteLine($"{l} , {ll_fss.Average()} , {(tb - ta).TotalMilliseconds}                                                    ");

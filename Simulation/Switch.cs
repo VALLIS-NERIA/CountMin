@@ -18,6 +18,7 @@ namespace Simulation {
                     base[sw] = 0;
                 }
             }
+
             new public double this[Switch key] {
                 get { return base[key]; }
 
@@ -42,13 +43,14 @@ namespace Simulation {
                 foreach (var sw1 in sw.LinkedSwitches) {
                     sb.Append(sw.Name).Append(" -> ").Append(sw1.Name).Append(" : ").Append(this[sw1]).Append(Environment.NewLine);
                 }
+
                 return sb.ToString();
             }
         }
 
-        public bool Visited = false;
-
         private static Random rnd = new Random();
+
+        public bool Visited = false;
 
         public string Name { get; set; }
 
@@ -78,6 +80,7 @@ namespace Simulation {
                 this.LinkedSwitches.Add(sw);
                 this.LinkLoad.Add(sw, 0);
             }
+
             if (!sw.LinkedSwitches.Contains(this)) {
                 sw.LinkedSwitches.Add(this);
                 sw.LinkLoad.Add(this, 0);
@@ -106,6 +109,7 @@ namespace Simulation {
             if (PassingFlows.Contains(f)) {
                 throw new ArgumentException();
             }
+
             PassingFlows.Add(f);
             if (f.OutgressSwitch == this)
                 return;

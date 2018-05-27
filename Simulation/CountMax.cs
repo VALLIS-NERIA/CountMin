@@ -21,7 +21,7 @@ namespace Simulation.CountMaxSketch {
         // private Mutex mutex;
         private HashFunc hashFactory(int seed) { return o => (uint) (((uint) (o.GetHashCode() ^ seed)) % this.w); }
 
-        public CMLine(int _w) {
+        public Line(int _w) {
             this.w = _w;
             this.Count = new ElemType[w];
             this.Keys = new object[w];
@@ -44,6 +44,7 @@ namespace Simulation.CountMaxSketch {
                     Keys[index] = key;
                 }
             }
+
             return index;
         }
 
@@ -51,6 +52,7 @@ namespace Simulation.CountMaxSketch {
             if (Keys[hash(key)] == key) {
                 return Count[hash(key)];
             }
+
             return 0;
         }
 
@@ -61,6 +63,7 @@ namespace Simulation.CountMaxSketch {
                     set.Add(key as T);
                 }
             }
+
             return set;
         }
 
@@ -68,15 +71,15 @@ namespace Simulation.CountMaxSketch {
     }
 
     public class Sketch {
-        private CMLine[] stat;
+        private Line[] stat;
         private int w, d;
 
-        public SwitchSketch(int _w, int _d) {
+        public Sketch(int _w, int _d) {
             this.w = _w;
             this.d = _d;
-            this.stat = new CMLine[d];
+            this.stat = new Line[d];
             for (int i = 0; i < d; i++) {
-                stat[i] = (new CMLine(w));
+                stat[i] = (new Line(w));
             }
         }
 
@@ -88,26 +91,25 @@ namespace Simulation.CountMaxSketch {
 
         public ElemType Query(object key) {
             var result = new List<ElemType>();
-            foreach (CMLine cmLine in stat) {
+            foreach (Line cmLine in stat) {
                 result.Add(cmLine.Query(key));
             }
+
             return result.Max();
         }
 
         public HashSet<T> GetAllKeys <T>() where T : class {
             var list = (IEnumerable<T>) new List<T>();
-            foreach (CMLine line in this.stat) {
+            foreach (Line line in this.stat) {
                 list = list.Concat(line.GetKeys<T>());
             }
+
             return new HashSet<T>(list);
         }
     }
-    
-
 }
 
 namespace Simulation {
-
     public class FilteredCountMax : IReversibleSketch<Flow, ElemType> {
         public class CMLine : CountMaxSketch.Line {
             public CMLine(int _w) : base(_w) { }
@@ -117,6 +119,80 @@ namespace Simulation {
             public SwitchSketch(int _w, int _d) : base(_w, _d) { }
         }
 
+        private int threshold = 1000;
+
+        private Dictionary<Switch, SwitchSketch> data;
+        private Dictionary<Switch, CountMin.SwitchSketch> filter;
+        public int W { get; }
+        private int d;
+
+        public FilteredCountMax(int _w, int _d) {
+            this.W = _w;
+            this.d = _d;
+            this.data = new Dictionary<Switch, SwitchSketch>();
+            this.filter = new Dictionary<Switch, CountMin.SwitchSketch>();
+        }
+
+        public FilteredCountMax(int w) : this(w, 1) { }
+
+        public void Update(Flow flow, ElemType value) {
+            var t = value;
+            var packet = 1750000;
+            while (t > 0) {
+                _update(flow, t > packet ? packet : t);
+                t -= packet;
+            }
+        }
+
+        private void _update(Flow flow, ElemType value) {
+            bool large = false;
+            foreach (Switch sw in flow) {
+                if (!sw.IsEdge) {
+                    if (!this.filter.ContainsKey(sw)) {
+                        this.filter.Add(sw, new CountMin.SwitchSketch(W, d));
+                    }
+
+                    this.filter[sw].Update(flow, value);
+                    if (this.filter[sw].Query(flow) > this.threshold) {
+                        large = true;
+                    }
+                }
+                else if (large) {
+                    if (!data.ContainsKey(sw)) {
+                        data.Add(sw, new SwitchSketch(W, d));
+                    }
+
+                    data[sw].Update(flow, value);
+                }
+                else {
+                    // Filtered.
+                }
+            }
+        }
+
+        public ElemType Query(Switch sw, Flow flow) { return data[sw].Query(flow); }
+
+        public ElemType Query(Flow flow) {
+            var result = new List<ElemType>();
+            foreach (Switch sw in flow) {
+                if (sw.IsEdge) {
+                    result.Add(this.data[sw].Query(flow));
+                }
+            }
+
+            return result.Max();
+        }
+
+        public ElemType this[Flow key] => this.Query(key);
+
+        public IEnumerable<Flow> GetAllKeys() {
+            var list = (IEnumerable<Flow>) new List<Flow>();
+            foreach (var pair in this.data) {
+                list = list.Concat(pair.Value.GetAllKeys<Flow>());
+            }
+
+            return new HashSet<Flow>(list);
+        }
     }
 
     public class CountMax : IReversibleSketch<Flow, ElemType> {
@@ -162,6 +238,7 @@ namespace Simulation {
                 if (!data.ContainsKey(sw)) {
                     data.Add(sw, new SwitchSketch(W, d));
                 }
+
                 data[sw].Update(flow, value);
             }
         }
@@ -173,6 +250,7 @@ namespace Simulation {
             foreach (Switch sw in flow) {
                 result.Add(Query(sw, flow));
             }
+
             return result.Max();
         }
 
@@ -183,6 +261,7 @@ namespace Simulation {
             foreach (var pair in this.data) {
                 list = list.Concat(pair.Value.GetAllKeys<Flow>());
             }
+
             return new HashSet<Flow>(list);
         }
     }
