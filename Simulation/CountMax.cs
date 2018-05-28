@@ -145,7 +145,7 @@ namespace Simulation {
         }
 
         private void _update(Flow flow, ElemType value) {
-            bool large = false;
+            bool large = true;
             foreach (Switch sw in flow) {
                 if (!sw.IsEdge) {
                     if (!this.filter.ContainsKey(sw)) {
@@ -153,8 +153,8 @@ namespace Simulation {
                     }
 
                     this.filter[sw].Update(flow, value);
-                    if (this.filter[sw].Query(flow) > this.threshold) {
-                        large = true;
+                    if (this.filter[sw].Query(flow) < this.threshold) {
+                        large = false;
                     }
                 }
                 else if (large) {
