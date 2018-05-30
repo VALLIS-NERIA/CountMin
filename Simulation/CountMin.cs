@@ -52,6 +52,12 @@ namespace Simulation {
                 return index;
             }
 
+            public ElemType PeekUpdate(object key, ElemType value) {
+                int index = hash(key);
+                stat[index] += value;
+                return this.stat[index];
+            }
+
             public ElemType Query(object key) { return stat[hash(key)]; }
 
             public ElemType this[object key] => Query(key);
@@ -74,6 +80,16 @@ namespace Simulation {
                 foreach (CMLine cmLine in stat) {
                     cmLine.Update(key, value, add);
                 }
+            }
+
+            public ElemType PeekUpdate(object key, ElemType value) {
+                ElemType min = long.MaxValue;
+                foreach (CMLine cmLine in stat) {
+                    var t = cmLine.PeekUpdate(key, value);
+                    if (t < min) min = t;
+                }
+
+                return min;
             }
 
             public ElemType Query(object key) {

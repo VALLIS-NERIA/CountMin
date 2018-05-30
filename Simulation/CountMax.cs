@@ -126,18 +126,30 @@ namespace Simulation {
         public int W { get; }
         private int d;
 
-        public FilteredCountMax(int _w, int _d) {
+        public FilteredCountMax(int _w, int _d, Topology topo) {
             this.W = _w;
             this.d = _d;
             this.data = new Dictionary<Switch, SwitchSketch>();
             this.filter = new Dictionary<Switch, CountMin.SwitchSketch>();
+            this.Init(topo);
         }
 
-        public FilteredCountMax(int w) : this(w, 1) { }
+        //public FilteredCountMax(int w) : this(w, 1) { }
+
+        private void Init(Topology topo) {
+            foreach (Switch sw in topo.Switches) {
+                if (sw.IsEdge) {
+                    this.data.Add(sw, new SwitchSketch(this.W, this.d));
+                }
+                else {
+                    this.filter.Add(sw,new CountMin.SwitchSketch(this.W, this.d));
+                }
+            }
+        }
 
         public void Update(Flow flow, ElemType value) {
             var t = value;
-            var packet = 1750000;
+            var packet = 500;
             while (t > 0) {
                 _update(flow, t > packet ? packet : t);
                 t -= packet;
@@ -145,22 +157,24 @@ namespace Simulation {
         }
 
         private void _update(Flow flow, ElemType value) {
-            bool large = true;
+            bool large = false;
             foreach (Switch sw in flow) {
                 if (!sw.IsEdge) {
-                    if (!this.filter.ContainsKey(sw)) {
-                        this.filter.Add(sw, new CountMin.SwitchSketch(W, d));
-                    }
+                    //if (!this.filter.ContainsKey(sw)) {
+                    //    this.filter.Add(sw, new CountMin.SwitchSketch(W, d));
+                    //}
 
-                    this.filter[sw].Update(flow, value);
-                    if (this.filter[sw].Query(flow) < this.threshold) {
-                        large = false;
+                    var amount = this.filter[sw].PeekUpdate(flow, value);
+                    if (amount > this.threshold) {
+                        large = true;
+                        this.data[flow.OutgressSwitch].Update(flow, value);
+                        break;
                     }
                 }
                 else if (large) {
-                    if (!data.ContainsKey(sw)) {
-                        data.Add(sw, new SwitchSketch(W, d));
-                    }
+                    //if (!data.ContainsKey(sw)) {
+                    //    data.Add(sw, new SwitchSketch(W, d));
+                    //}
 
                     data[sw].Update(flow, value);
                 }
@@ -180,7 +194,7 @@ namespace Simulation {
                 }
             }
 
-            return result.Max();
+            return result.Max()+(long)(this.threshold*0.5);
         }
 
         public ElemType this[Flow key] => this.Query(key);
@@ -226,7 +240,7 @@ namespace Simulation {
 
         public void Update(Flow flow, ElemType value) {
             var t = value;
-            var packet = 1750000;
+            var packet = 500;
             while (t > 0) {
                 _update(flow, t > packet ? packet : t);
                 t -= packet;
@@ -235,9 +249,9 @@ namespace Simulation {
 
         private void _update(Flow flow, ElemType value) {
             foreach (Switch sw in flow) {
-                if (!data.ContainsKey(sw)) {
-                    data.Add(sw, new SwitchSketch(W, d));
-                }
+                //if (!data.ContainsKey(sw)) {
+                //    data.Add(sw, new SwitchSketch(W, d));
+                //}
 
                 data[sw].Update(flow, value);
             }

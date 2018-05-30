@@ -401,29 +401,60 @@ namespace Simulator {
             var flowSet = LoadFlow("UDP fattree.json", topo);
             int w = 1000;
             int d = 2;
-            var fcm = new FilteredCountMax(w,d);
-            var cm = new CountMax(w,d);
+            int count = 5;
+            while (count-- > 0) {
+                var fcm = new FilteredCountMax(w, d, topo);
+                var cm = new CountMax(w, d);
+                cm.Init(topo);
+                var t00 = DateTime.Now;
+                foreach (Flow flow in flowSet) {
+                    fcm.Update(flow, (ElemType) flow.Traffic);
+                }
+
+                var t = DateTime.Now;
+                foreach (Flow flow in flowSet) {
+                    cm.Update(flow, (ElemType) flow.Traffic);
+                }
+
+                var t11 = DateTime.Now;
+
+                var lf = new List<Tup>();
+                var l = new List<Tup>();
+                foreach (Flow flow in flowSet) {
+                    var qfcm = fcm.Query(flow);
+                    var qcm = cm.Query(flow);
+                    lf.Add((flow.Traffic, qfcm));
+                    l.Add((flow.Traffic, qcm));
+                }
+
+                foreach (var threshold in new[] {0.001}.Reverse()) {
+                    var llf = RelativeErrorOfTop(lf, threshold);
+                    var ll = RelativeErrorOfTop(l, threshold);
+
+                    Console.WriteLine($"\r{w}, {d}, {threshold},{llf.Average()}, {ll.Average()}, {(t - t00).TotalMilliseconds},{(t11 - t).TotalMilliseconds}");
+
+                }
+            }
+        }
+
+        static void TTT() {
+            var topo = global::Generator.Program.FatTreeGen(8);
+            var flowSet = LoadFlow("UDP fattree.json", topo);
+            int w = 10000;
+            int d = 2;
+            var cm = new Simulation.CountMaxSketch.Sketch(w, d);
             foreach (Flow flow in flowSet) {
-                fcm.Update(flow, (ElemType) flow.Traffic);
                 cm.Update(flow, (ElemType) flow.Traffic);
             }
 
-            var lf = new List<Tup>();
             var l = new List<Tup>();
             foreach (Flow flow in flowSet) {
-                var qfcm = fcm.Query(flow);
                 var qcm = cm.Query(flow);
-                lf.Add((flow.Traffic,qfcm));
-                l.Add((flow.Traffic,qcm));
-            }
-            foreach (var threshold in new[] { 0.01, 0.02, 0.05 }.Reverse()) {
-                var llf = RelativeErrorOfTop(lf, threshold);
-                var ll = RelativeErrorOfTop(l, threshold);
-                
-                Console.WriteLine($"\r{w}, {d}, {threshold},{llf.Average()}, {ll.Average()}");
-
+                l.Add((flow.Traffic, qcm));
             }
 
+            var lh = HHFilter(l, 0.0005).OrderByDescending(o => o).ToList();
+            ;
         }
 
         static void Main() {
@@ -432,6 +463,7 @@ namespace Simulator {
             Debug.WriteLine("--DEBUG--");
 #endif
             Filter();
+            //TTT();
             IEnumerable<Task> taskList = new List<Task>();
             //taskList = taskList.Concat(FSSTesting());
             //SketchAppr();
