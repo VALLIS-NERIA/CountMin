@@ -11,18 +11,26 @@ using System.Threading.Tasks;
 using ElemType = System.Int64;
 
 namespace Simulation {
-    public interface IReversibleSketch <TKey, TValue>:ISketch<TKey,TValue> {
+    public interface IReversibleSketch <TKey, TValue>:ITopoSketch<TKey,TValue> {
         IEnumerable<TKey> GetAllKeys();
     }
 
-    public interface ISketch <TKey, TValue> {
+    public interface ITopoSketch <in TKey, TValue> {
         void Update(TKey key, TValue value);
         TValue Query(TKey key);
         TValue this[TKey key] { get; }
     }
 
+    public interface ISketch < TValue> {
+        void Update(object key, TValue value);
 
-    public class CountMin : ISketch<Flow, ElemType> {
+        TValue Query(object key);
+        
+    }
+
+
+
+    public class CountMin : ITopoSketch<Flow, ElemType> {
         //public Type ElementType = new ElemType().GetType();
         private static Random rnd = new Random();
 
@@ -54,8 +62,9 @@ namespace Simulation {
 
             public ElemType PeekUpdate(object key, ElemType value) {
                 int index = hash(key);
+                ElemType old = this.stat[index];
                 stat[index] += value;
-                return this.stat[index];
+                return old;
             }
 
             public ElemType Query(object key) { return stat[hash(key)]; }

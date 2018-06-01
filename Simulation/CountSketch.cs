@@ -63,7 +63,7 @@ namespace Simulation {
 
         }
 
-        public class SwitchSketch {
+        public class SwitchSketch:ISketch<ElemType> {
             private CSLine[] stat;
             private int w, d;
 

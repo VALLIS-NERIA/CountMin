@@ -70,7 +70,7 @@ namespace Simulation.CountMaxSketch {
         public ElemType this[object key] => Query(key);
     }
 
-    public class Sketch {
+    public class Sketch : ISketch<ElemType> {
         private Line[] stat;
         private int w, d;
 
@@ -142,7 +142,7 @@ namespace Simulation {
                     this.data.Add(sw, new SwitchSketch(this.W, this.d));
                 }
                 else {
-                    this.filter.Add(sw,new CountMin.SwitchSketch(this.W, this.d));
+                    this.filter.Add(sw, new CountMin.SwitchSketch(this.W, this.d));
                 }
             }
         }
@@ -194,7 +194,7 @@ namespace Simulation {
                 }
             }
 
-            return result.Max()+(long)(this.threshold*0.5);
+            return result.Max() + (long) (this.threshold * 0.5);
         }
 
         public ElemType this[Flow key] => this.Query(key);

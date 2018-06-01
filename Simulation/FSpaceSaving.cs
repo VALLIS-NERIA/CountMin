@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using ElemType = System.Int64;
 
 namespace Simulation {
-    public class FSpaceSaving : ISketch<Flow, ElemType> {
+    public class FSpaceSaving : ITopoSketch<Flow, ElemType> {
         private delegate uint HashFunc(object obj);
 
         private static Random rnd = new Random();
@@ -22,7 +22,7 @@ namespace Simulation {
             public int CompareTo(Entry other) { return this.f.CompareTo(other.f); }
         }
 
-        public class SwitchSketch {
+        public class SwitchSketch:ISketch<ElemType> {
             public ElemType[] Alpha;
             public int[] Counter;
             private MinHeap<object, Entry> heap;

@@ -17,23 +17,23 @@ namespace Simulator {
     using ElemType = Int64;
 
     static partial class Program {
-        static int[] k_list = {100, 200, 400, 700, 1000, 1500, 2000, 2500, 3000};
-        static string[] topo_list = {"fattree8", "hyperx9"};
+        static int[] k_list = {1000, 1500, 2000, 2500, 3000};
+        static string[] topo_list = {"Fattree", "HyperX"};
 
         static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
 
         //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
         //private static int[] count_list = {50000, 100000, 200000, 300000};
-        private static int[] count_list = {150000, 250000};
+        private static int[] count_list = {50000,100000,150000,200000, 250000,300000};
 
 
-        static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ISketch<Flow, ElemType> sketch) {
+        static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ITopoSketch<Flow, ElemType> sketch) {
             var topo = LoadTopo(topoJson);
             var flowSet = LoadFlow(flowJson, topo);
             return ReRouteWithSketch(topo, flowSet, sketch);
         }
 
-        static List<Flow> ReRouteWithSketch(Topology topo, List<Flow> flowSet, ISketch<Flow, ElemType> sketch) {
+        static List<Flow> ReRouteWithSketch(Topology topo, List<Flow> flowSet, ITopoSketch<Flow, ElemType> sketch) {
             foreach (var sw in topo.Switches) {
                 sw.ClearFlow();
             }
@@ -151,7 +151,7 @@ namespace Simulator {
             foreach (var flow_count in count_list) {
                 void _reroute(object obj) {
                     try {
-                        ISketch<Flow, ElemType> sketch = (ISketch<Flow, long>) obj;
+                        ITopoSketch<Flow, ElemType> sketch = (ITopoSketch<Flow, long>) obj;
                         var topo = LoadTopo(topos + ".json");
                         (sketch as CountMax)?.Init(topo);
                         var fin = $"zipf_{flow_count}_{topos}_OSPF";
@@ -204,27 +204,39 @@ namespace Simulator {
             var taskList = new List<Task>();
             var time = new StreamWriter("timenew.csv");
             var anal = new StreamWriter("analysis_All.csv");
+            var ft = Generator.Program.FatTreeGen(8);
+            var hy = Generator.Program.HyperXGen(9);
+            for (int i = 0; i < hy.Switches.Count; i++) {
+                hy.Switches[i].IsEdge = i % 2 == 0;
+            }
+
+            var ths = 10000; 
             //anal.WriteLine("topo, k, flow_count, threshold, cm_avg, cm_hit, cm_time, sv_avg, sv_hit, sv_time, cs_avg, cs_hit, cs_time, cm_min, cm_max, sv_min, sv_max, cs_min, cs_max");
-            foreach (RoutingAlgorithm algorithm in algo_list)
+            //foreach (RoutingAlgorithm algorithm in algo_list)
             foreach (string topos in topo_list)
             foreach (var flow_count in count_list)
-            foreach (int k in k_list) {
-                if (k != 1000 /*&& flow_count != 150000 && flow_count!=250000*/) continue;
+            foreach (int k in k_list) 
+            {
+                //if (k != 1000 /*&& flow_count != 150000 && flow_count!=250000*/) continue;
 
                 void _do() {
                     //var flow_count = "zipf_200000";
-                    var topo = LoadTopo(topos + ".json");
-                    var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                    var topo = topos == "HyperX" ? hy : ft;
+                    //var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                    var fin = $"{topos}_{flow_count}";
                     //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
                     //var fin = $"udp12w_{topos}_OSPF.json";
                     var flowSet = LoadFlow(fin, topo);
                     //var flow_count = flowSet.Count;
-                    var cm = new CountMax(k, 2);
-                    cm.Init(topo);
+                    var cm = new FilteredSketch<CountMax.SwitchSketch>(ths);
+                    cm.Init(topo,k,2,()=>new CountMax.SwitchSketch(k, 2));
                     int k_sv = (int) (1.2 * k);
-                    var sv = new SketchVisor(k_sv);
-                    var cs = new CountSketch(k, 2);
-                    var fss = new FSpaceSaving(k);
+                    var sv = new FilteredSketch<SketchVisor.SwitchSketch>(ths);
+                    sv.Init(topo, k, 2, () => new SketchVisor.SwitchSketch(k_sv));
+                    var cs = new FilteredSketch<CountSketch.SwitchSketch>(ths);
+                    cs.Init(topo, k, 2, () => new CountSketch.SwitchSketch(k, 2));
+                    var fss = new FilteredSketch<FSpaceSaving.SwitchSketch>(ths);
+                    fss.Init(topo, k, 2, () => new FSpaceSaving.SwitchSketch(k));
                     //Console.WriteLine($"{topos}, {flow_count}, {k} initing                                    ");
 
                     var t00 = DateTime.Now;
@@ -298,10 +310,10 @@ namespace Simulator {
 
                     //
                     //
-                    foreach (var threshold in new[] {0.01, 0.05}.Reverse()) {
+                    foreach (var threshold in new[] { 0.005, 0.01}.Reverse()) {
                         var ll_cm = RelativeErrorOfTop(list_cm, threshold);
                         var count_cm = ll_cm.Count(d => d != 0);
-                        var t_cm = list_cm.Sum(t => t.Item1);
+                        var t_cm = list_cm.Where(t => t.Item2 != 0).Sum(t => t.Item1);
                         //Console.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
                         //anal_cm.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
 
@@ -319,7 +331,7 @@ namespace Simulator {
 
                         var total = list_cm.Sum(t => t.Item1);
                         //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
-                        Console.WriteLine($"\r{topos}, {flow_count}, {k},{ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()},{cm_time},{fss_time},{cs_time}");
+                        Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold}, {ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()},{t_cm / total},{t_fss / total},{t_cs / total},{cm_time},{fss_time},{cs_time}");
                         //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold} , {ll_fss.Average()} , {ll_fss.Min()} , {ll_fss.Max()} , {count_fss}                                ");
                         //    //lock (anal) {
                         //    //    anal.Write($"{topos},{k},{flow_count},{threshold} ,");
@@ -343,29 +355,29 @@ namespace Simulator {
                     //}
                     //Console.WriteLine(
                     //    $"{topos}, {flow_count}, {k} finished in {cm_time}/{sv_time}/{cs_time}, rerouting...                   ");
-                    void _reroute(object sketch) {
-                        try {
-                            List<Flow> _flowSet = flowSet;
-                            var _topo = LoadTopo(topos + ".json");
-                            //lock (flowSet) {
-                            //    _flowSet = LoadFlow(fin,_topo);
-                            //}
-                            var fout = $"REROUTE_CountMax_k{k}_{fin}.json";
-                            var newFlow = ReRouteWithSketch(_topo, _flowSet, sketch as ISketch<Flow, ElemType>);
-                            using (var sw = new StreamWriter(fout)) {
-                                sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(_topo)));
-                            }
-                        }
-                        catch (Exception e) {
-                            Console.WriteLine(e.Message);
-                            Console.WriteLine(e.StackTrace);
-                        }
-                    }
+                    //void _reroute(object sketch) {
+                    //    try {
+                    //        List<Flow> _flowSet = flowSet;
+                    //        var _topo = LoadTopo(topos + ".json");
+                    //        //lock (flowSet) {
+                    //        //    _flowSet = LoadFlow(fin,_topo);
+                    //        //}
+                    //        var fout = $"REROUTE_CountMax_k{k}_{fin}.json";
+                    //        var newFlow = ReRouteWithSketch(_topo, _flowSet, sketch as ITopoSketch<Flow, ElemType>);
+                    //        using (var sw = new StreamWriter(fout)) {
+                    //            sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(_topo)));
+                    //        }
+                    //    }
+                    //    catch (Exception e) {
+                    //        Console.WriteLine(e.Message);
+                    //        Console.WriteLine(e.StackTrace);
+                    //    }
+                    //}
 
                     //_reroute(cm);
-                    taskList.Add(new Task(_reroute, cm));
-                    taskList.Add(new Task(_reroute, cs));
-                    taskList.Add(new Task(_reroute, fss));
+                    //taskList.Add(new Task(_reroute, cm));
+                    //taskList.Add(new Task(_reroute, cs));
+                    //taskList.Add(new Task(_reroute, fss));
 
                     //fout = $"REROUTE_SketchVisor_k{k}_{fin}.json";
                     //newFlow = ReRouteWithSketch(topo, flowSet, sv);
@@ -462,14 +474,14 @@ namespace Simulator {
 #if DEBUG
             Debug.WriteLine("--DEBUG--");
 #endif
-            Filter();
+            //Filter();
             //TTT();
             IEnumerable<Task> taskList = new List<Task>();
             //taskList = taskList.Concat(FSSTesting());
             //SketchAppr();
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
-            //taskList = taskList.Concat(SketchCompareAppr());
+            taskList = taskList.Concat(SketchCompareAppr());
             //taskList = taskList.Concat(ConcurrentReroute());
             //taskList = taskList.Concat(Prototype());
             //PartialReroute();

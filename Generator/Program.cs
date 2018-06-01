@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
@@ -10,144 +11,79 @@ using Simulation;
 using static Simulation.Utils;
 using MathNet.Numerics;
 using MathNet.Numerics.Distributions;
+using MathNet.Numerics.Random;
 using MathNet.Numerics.Statistics;
 
 namespace Generator {
     public class Program {
-        static Random rnd = new Random();
+        static Random rnd = new Xorshift();
         static int[] k_list = {100, 200, 400, 700, 1000, 1500, 2000, 2500, 3000};
         static string[] topo_list = {"fattree8", "hyperx9"};
 
         static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
 
         //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
-        private static int[] count_list = {50000, 100000, 200000, 300000};
+        private static int[] count_list = {50000, 100000,150000, 200000,250000, 300000};
 
-        private static Task[] BenchMark(string name = "SketchVisor", bool head = true) {
-            if (head) {
-                Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
-            }
+
+        static void NewGen(Topology topo, string topoName) {
+            var floyd = new Floyd(topo).Calc();
             var taskList = new List<Task>();
-            foreach (RoutingAlgorithm algorithm in algo_list) {
-                foreach (string topos in topo_list) {
-                    foreach (var flow_count in count_list) {
-                        foreach (int k in new[] {0}.Concat(k_list)) {
-                            var topo = LoadTopo(topos + ".json");
-                            var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
-                            var fout = $"REROUTE_{name}_k{k}_{fin}.json";
-                            if (!File.Exists(fout)) {
-                                continue;
+            foreach (int count in count_list) {
+                var refSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText($"zipf_{count}_fattree8_OSPF.json"));
+                taskList.Add(new Task(
+                    delegate() {
+                        var traffics = (from f in refSet.flows select f.traffic * (300000d / count)).ToArray();
+                        //Zipf.Samples(traffics, 1, count);
+                        var edges = topo.Switches.Where(sw => sw.IsEdge).ToList();
+                        var len = edges.Count;
+                        var flowSet = new List<Flow>();
+                        var flowCount = traffics.Length;
+                        while (flowCount-- > 0) {
+                            var src = edges[rnd.Next() % len];
+                            var dst = edges[rnd.Next() % len];
+                            while (dst == src) {
+                                dst = edges[rnd.Next() % len];
                             }
-                            var task =
-                                new Task(() =>
-                                {
-                                    var flowReal = LoadFlow(fin, topo);
-                                    var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
-                                    double maxLoad = 0;
-                                    var iter0 = flowReal.GetEnumerator();
-                                    var iter = flowSet.GetEnumerator();
-                                    iter.MoveNext();
-                                    iter0.MoveNext();
-                                    while (true) {
-                                        var flow0 = iter0.Current;
-                                        var flow = iter.Current;
-                                        flow.Traffic = flow0.Traffic;
-                                        flow.Assign();
-                                        if (!iter.MoveNext() ||
-                                            !iter0.MoveNext()) {
-                                            break;
-                                        }
-                                    }
-                                    var load = from sw in topo.FetchLinkLoad() select sw.Value;
-                                    iter.Dispose();
-                                    iter0.Dispose();
-                                    Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
-                                });
-                            taskList.Add(task);
+
+                            flowSet.Add(new Flow(floyd[src][dst], (long) (traffics[flowCount])));
                         }
-                    }
-                }
-            }
-            return taskList.ToArray();
-        }
 
-        static void ExpGen() {
-            var topo_list = new[] {"fattree6", "hyperx7"};
-            var count_list = new[] {50000,100000,200000,300000};
-            foreach (string topos in topo_list) {
-                foreach (int count in count_list) {
-                    var fn = $"exp_{count}_{topos}_OSPF.json";
+                        var fj = flowSet.ToCoflowJson(topo);
+                        string j = JsonConvert.SerializeObject(fj);
+                        using (var sw = new StreamWriter($"{topoName}_{count}.json")) {
+                            sw.Write(j);
+                        }
 
-                }
+                        Console.WriteLine($"{topoName}_{count}.json");
+                    }));
             }
-        }
-        static void InitGen() {
-            var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
-            var topo_list = new[] {"fattree6", "hyperx7"};
-            var algo_list = new RoutingAlgorithm[] {Greedy.FindPath};
-            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
 
-            var taskList = new List<Task>();
-            foreach (string topos in topo_list) {
-                foreach (RoutingAlgorithm algorithm in algo_list) {
-                    foreach (var flow_count in count_list) {
-                        var topo = LoadTopo(topos + ".json");
-                        var task =
-                            new Task(() =>
-                            {
-                                var fold = $"zipf_{flow_count}_{topos}_OSPF.json";
-                                var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
-                                var flowOld = LoadFlow(fold, topo);
-                                //var traffics =( from flow in flowOld select flow.Traffic).ToList();
-                                Console.WriteLine($"invoking {fn}");
-                                var flowSet = new List<Flow>();
-                                for (int i = 0; i < flow_count; ++i) {
-                                    var f = ReRoute(flowOld[i], algorithm);
-                                    f.Assign();
-                                    flowSet.Add(f);
-                                }
-                                using (var sw = new StreamWriter(fn))
-                                    sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
-                                Console.WriteLine($"FINISHED {fn}");
-                            });
-                        taskList.Add(task);
-                        task.Start();
-                    }
-                }
+            foreach (Task task in taskList) {
+                task.Start();
             }
+
             Task.WaitAll(taskList.ToArray());
+            //var topo = FatTreeGen(8);
         }
 
 
-        static void Main() {
+        static async Task Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //InitGen();
-            var topo = FatTreeGen(8);
-            var floyd = new Floyd(topo).Calc();
-            var edges = topo.Switches.Where(sw => sw.IsEdge).ToList();
-            var len = edges.Count;
-            var flowSet = new List<Flow>();
-            var traffics = new List<int>();
-            using (var sr = new StreamReader("udp new.txt")) {
-                while (!sr.EndOfStream) {
-                    traffics.Add(int.Parse(sr.ReadLine()));
-                }
-            }
-            var flowCount = traffics.Count;
-            while (flowCount-- > 0) {
-                var src = edges[rnd.Next() % len];
-                var dst = edges[rnd.Next() % len];
-                while (dst == src) {
-                    dst = edges[rnd.Next() % len];
-                }
-                flowSet.Add(new Flow(floyd[src][dst],traffics[flowCount]));
+            var ft = FatTreeGen(8);
+            var hy = HyperXGen(9);
+            for (int i = 0; i < hy.Switches.Count; i++) {
+                hy.Switches[i].IsEdge = i % 2 == 0;
             }
 
-            var fj = flowSet.ToCoflowJson(topo);
-            string j = JsonConvert.SerializeObject(fj);
-            using (var sw = new StreamWriter("UDP fattree.json")) {
-                sw.Write(j);
+            NewGen(ft, "Fattree");
+            NewGen(hy, "HyperX");
+            foreach (int count in count_list) {
+                var refSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText($"Fattree_{count}.json")).flows.Select(f => f.traffic);
+                Console.WriteLine($"{count}, {refSet.Average()}");
             }
+
             Console.ReadLine();
         }
 
@@ -155,16 +91,18 @@ namespace Generator {
         static void test() {
             var flow_count = 10000;
             var traffics = new int[flow_count];
-            var samples = new int[flow_count*3];
+            var samples = new int[flow_count * 3];
             Zipf.Samples(samples, 0.2, flow_count);
             for (int i = 0; i < flow_count; i++) {
                 //traffics[i] = 1;
             }
+
             var c = 0;
             foreach (int sample in samples) {
                 //if (++c >= 1 * flow_count) break;
                 traffics[(int) sample - 1] += 1;
             }
+
             using (var sw = new StreamWriter("test1.csv")) {
                 for (int i = 0; i < flow_count; i++) {
                     sw.WriteLine($"{traffics[i]}");
@@ -192,12 +130,14 @@ namespace Generator {
                 for (int i = 0; i < flow_count; i++) {
                     traffics[i] = 0;
                 }
+
                 var c = 0;
                 foreach (int sample in samples) {
                     if (++c >= 1 * flow_count) break;
                     //traffics[(int) sample - 1] += 1;
                     traffics[c] = sample;
                 }
+
                 c = flow_count;
                 var flowSet = new List<Flow>();
 
@@ -207,8 +147,10 @@ namespace Generator {
                     while (dst == src) {
                         dst = topo.RandomDst();
                     }
+
                     flowSet.Add(new Flow(floyd[src][dst], traffics[c]));
                 }
+
                 s = JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo));
                 using (var sw = new StreamWriter($"test_{flow_count}.json")) {
                     sw.Write(s);
@@ -222,13 +164,16 @@ namespace Generator {
             for (int i = 0; i < 8; i++) {
                 switches.Add(new Switch($"{i}"));
             }
+
             for (int i = 1; i < 4; i++) {
                 switches[i].Link(switches[i + 4]);
             }
+
             for (int i = 1; i < 4; i++) {
                 switches[0].Link(switches[i]);
                 switches[4].Link(switches[i + 4]);
             }
+
             topo.Switches = switches;
             return topo;
         }
@@ -244,14 +189,14 @@ namespace Generator {
             var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
             var topo_list = new[] {"fattree8", "hyperx9"};
             var algo_list = new RoutingAlgorithm[] {OSPF.FindPath};
-            var count_list = new[] {150000,250000};
+            var count_list = new[] {150000, 250000};
             //var flow_count = 10000;
 
             var taskList = new List<Task>();
-                foreach (var flow_count in count_list) {
-                    //var traffics = new int[flow_count];
-                    //Zipf.Samples(traffics, 1, flow_count);
-                    var traffics = Zipf.Samples(1, flow_count);
+            foreach (var flow_count in count_list) {
+                //var traffics = new int[flow_count];
+                //Zipf.Samples(traffics, 1, flow_count);
+                var traffics = Zipf.Samples(1, flow_count);
                 foreach (string topos in topo_list) {
                     var topo = LoadTopo(topos + ".json");
                     var table = new Floyd(topo).Calc();
@@ -264,7 +209,6 @@ namespace Generator {
                     //}
 
 
-
                     var flowSet = new List<Flow>();
                     foreach (int traffic in traffics) {
                         if (flowSet.Count == flow_count) break;
@@ -273,15 +217,18 @@ namespace Generator {
                         while (dst == src) {
                             dst = topo.RandomSwitch();
                         }
+
                         var route = table[src][dst];
                         var f = new Flow(route, traffic);
                         flowSet.Add(f);
                         Console.Write($"\r{flowSet.Count}");
                     }
+
                     using (var sw = new StreamWriter(fn)) {
                         sw.Write(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
                     }
                 }
+
                 Task.WaitAll(taskList.ToArray());
             }
         }
@@ -292,10 +239,12 @@ namespace Generator {
             while (dst == src) {
                 dst = topo.RandomSwitch();
             }
+
             List<Switch> route = algo(src, dst);
             if (route == null) {
                 return null;
             }
+
             Flow f = new Flow(route);
             f.Traffic = traffic;
             return f;
@@ -310,16 +259,19 @@ namespace Generator {
                 while (f.Contains(sw1)) {
                     sw1 = sw.RandomLinkedSwitch();
                 }
+
                 f.Add(sw1);
             }
+
             return new Flow(f, traffic);
         }
 
-        static Topology HyperXGen(int x = 9) {
+        public static Topology HyperXGen(int x = 9) {
             var topo = new Topology();
             for (int i = 0; i < x * x; i++) {
                 topo.Switches.Add(new Switch($"Switch{i}"));
             }
+
             for (int i = 0; i < x * x; i++) {
                 var sw1 = topo.Switches[i];
                 for (int j = i + 1; j < (i / x) * x + x; j++) {
@@ -327,6 +279,7 @@ namespace Generator {
                     sw1.Link(sw2);
                 }
             }
+
             for (int i = 0; i < x * x; i++) {
                 var sw1 = topo.Switches[i];
                 for (int j = i + x; j < x * x; j += x) {
@@ -334,6 +287,7 @@ namespace Generator {
                     sw1.Link(sw2);
                 }
             }
+
             return topo;
         }
 
@@ -352,6 +306,7 @@ namespace Generator {
                     Aggr.Add(new Switch($"{name} Aggr {i}"));
                     Edge.Add(new Switch($"{name} Edge {i}", true));
                 }
+
                 foreach (var sw in Aggr) {
                     foreach (var swe in Edge) {
                         sw.Link(swe);
@@ -380,18 +335,125 @@ namespace Generator {
             for (int i = 0; i < n * n; i++) {
                 core.Add(new Switch($"Core {i}"));
             }
+
             for (int i = 0; i < K; i++) {
                 var pod = new Pod($"Pod {i}", K);
                 pods.Add(pod);
                 pod.CoreLink(core);
             }
+
             var switches = new List<Switch>();
             switches = switches.Concat(core).ToList();
             foreach (var pod in pods) {
                 switches = switches.Concat(pod.GetSwitches()).ToList();
             }
+
             topo.Switches = switches;
             return topo;
         }
+
+
+        #region old
+
+        private static Task[] BenchMark(string name = "SketchVisor", bool head = true) {
+            if (head) {
+                Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
+            }
+
+            var taskList = new List<Task>();
+            foreach (RoutingAlgorithm algorithm in algo_list) {
+                foreach (string topos in topo_list) {
+                    foreach (var flow_count in count_list) {
+                        foreach (int k in new[] {0}.Concat(k_list)) {
+                            var topo = LoadTopo(topos + ".json");
+                            var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                            var fout = $"REROUTE_{name}_k{k}_{fin}.json";
+                            if (!File.Exists(fout)) {
+                                continue;
+                            }
+
+                            var task =
+                                new Task(() => {
+                                             var flowReal = LoadFlow(fin, topo);
+                                             var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
+                                             double maxLoad = 0;
+                                             var iter0 = flowReal.GetEnumerator();
+                                             var iter = flowSet.GetEnumerator();
+                                             iter.MoveNext();
+                                             iter0.MoveNext();
+                                             while (true) {
+                                                 var flow0 = iter0.Current;
+                                                 var flow = iter.Current;
+                                                 flow.Traffic = flow0.Traffic;
+                                                 flow.Assign();
+                                                 if (!iter.MoveNext() ||
+                                                     !iter0.MoveNext()) {
+                                                     break;
+                                                 }
+                                             }
+
+                                             var load = from sw in topo.FetchLinkLoad() select sw.Value;
+                                             iter.Dispose();
+                                             iter0.Dispose();
+                                             Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
+                                         });
+                            taskList.Add(task);
+                        }
+                    }
+                }
+            }
+
+            return taskList.ToArray();
+        }
+
+        static void ExpGen() {
+            var topo_list = new[] {"fattree6", "hyperx7"};
+            var count_list = new[] {50000, 100000, 200000, 300000};
+            foreach (string topos in topo_list) {
+                foreach (int count in count_list) {
+                    var fn = $"exp_{count}_{topos}_OSPF.json";
+                }
+            }
+        }
+
+        static void InitGen() {
+            var k_list = new[] {10, 25, 50, 100, 200, 400, 700, 1000, 2000};
+            var topo_list = new[] {"fattree6", "hyperx7"};
+            var algo_list = new RoutingAlgorithm[] {Greedy.FindPath};
+            var count_list = new[] {10000, 20000, 30000, 40000, 50000};
+
+            var taskList = new List<Task>();
+            foreach (string topos in topo_list) {
+                foreach (RoutingAlgorithm algorithm in algo_list) {
+                    foreach (var flow_count in count_list) {
+                        var topo = LoadTopo(topos + ".json");
+                        var task =
+                            new Task(() => {
+                                         var fold = $"zipf_{flow_count}_{topos}_OSPF.json";
+                                         var fn = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}.json";
+                                         var flowOld = LoadFlow(fold, topo);
+                                         //var traffics =( from flow in flowOld select flow.Traffic).ToList();
+                                         Console.WriteLine($"invoking {fn}");
+                                         var flowSet = new List<Flow>();
+                                         for (int i = 0; i < flow_count; ++i) {
+                                             var f = ReRoute(flowOld[i], algorithm);
+                                             f.Assign();
+                                             flowSet.Add(f);
+                                         }
+
+                                         using (var sw = new StreamWriter(fn))
+                                             sw.WriteLine(JsonConvert.SerializeObject(flowSet.ToCoflowJson(topo)));
+                                         Console.WriteLine($"FINISHED {fn}");
+                                     });
+                        taskList.Add(task);
+                        task.Start();
+                    }
+                }
+            }
+
+            Task.WaitAll(taskList.ToArray());
+        }
+
+        #endregion
     }
 }

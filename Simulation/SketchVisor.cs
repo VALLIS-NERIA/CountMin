@@ -10,7 +10,7 @@ using static System.Math;
 namespace Simulation {
     using ElemType = System.Int64;
 
-    public class SketchVisor : ISketch<Flow, ElemType> {
+    public class SketchVisor : ITopoSketch<Flow, ElemType> {
         protected class Entry {
             public ElemType e;
             public ElemType r;
@@ -23,7 +23,7 @@ namespace Simulation {
             public static implicit operator Entry((ElemType _e, ElemType _r, ElemType _d) right) { return new Entry {e = right._e, d = right._d, r = right._r}; }
         }
 
-        public class SwitchSketch {
+        public class SwitchSketch:ISketch<ElemType> {
             private Dictionary<Flow, Entry> hashMap;
 
             public int K { get; private set; }
@@ -85,6 +85,9 @@ namespace Simulation {
                 }
             }
 
+            public void Update(object key, long value) => Update((Flow) key, value);
+
+            public ElemType Query(object key) => Query((Flow) key);
             public ElemType Query(Flow key) {
                 if (this.hashMap.ContainsKey(key)) {
                     checked {
