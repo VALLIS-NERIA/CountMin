@@ -1,4 +1,0 @@
-k3000
-flow300000
-10000000kickouts
-packet2048

@@ -21,6 +21,8 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+linux-headers-4.2.0-27/
+old/
 
 # Visual Studio 2015 cache/options directory
 .vs/
