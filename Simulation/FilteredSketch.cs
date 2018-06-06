@@ -7,27 +7,42 @@ using System.Threading.Tasks;
 namespace Simulation {
     using ElemType = Int64;
 
-    public delegate T SketchFactory <T>() where T : ISketch<ElemType>;
+    public delegate T SketchFactory <out T>() where T : ISketch<ElemType>;
 
-    public class FilteredSketch <T> where T : ISketch<ElemType> {
+    public interface IFS : ITopoSketch<Flow, ElemType>  {
+        string SketchClassName { get; }
+
+        void Init(Topology topo);
+    }
+
+    public class FilteredSketch <T> : IFS, ITopoSketch<Flow, ElemType> where T : class, ISketch<ElemType> {
         private int _threshold = 1000;
 
         private Dictionary<Switch, T> data = new Dictionary<Switch, T>();
         private Dictionary<Switch, CountMin.SwitchSketch> filter = new Dictionary<Switch, CountMin.SwitchSketch>();
+        private SketchFactory<T> factoryMethod;
+
         public int W { get; private set; }
         public int D { get; private set; }
 
-        public FilteredSketch(int threshold) { this._threshold = threshold; }
+        public string SketchClassName => typeof(T).DeclaringType.Name;
 
-        public void Init(Topology topo, int w, int d, SketchFactory<T> factoryMethod) {
+        public FilteredSketch(int w, int d, int threshold, SketchFactory<T> factoryMethod) {
+            this._threshold = threshold;
+            this.factoryMethod = factoryMethod;
             this.W = w;
             this.D = d;
+
+        }
+
+        public void Init(Topology topo) {
+
             foreach (var sw in topo.Switches) {
                 if (sw.IsEdge) {
                     this.data.Add(sw, factoryMethod());
                 }
                 else {
-                    this.filter.Add(sw, new CountMin.SwitchSketch(w, d));
+                    this.filter.Add(sw, new CountMin.SwitchSketch(this.W, this.D));
                 }
             }
         }
@@ -51,7 +66,7 @@ namespace Simulation {
 
                     var amount = this.filter[sw].PeekUpdate(flow, value);
 
-                    if (amount+value > this._threshold) {
+                    if (amount + value > this._threshold) {
                         if (amount < this._threshold) {
                             large = true;
                             this.data[flow.OutgressSwitch].Update(flow, value + amount);
@@ -86,8 +101,8 @@ namespace Simulation {
             //}
 
             //return result.Max() + (long)(this._threshold * 0.5);
-            if(!flow.OutgressSwitch.IsEdge)throw new ArgumentException("The flow's egress switch is not edge");
-            return this.data[flow.OutgressSwitch].Query(flow) + (long) (this._threshold * 0);
+            if (!flow.OutgressSwitch.IsEdge) throw new ArgumentException("The flow's egress switch is not edge");
+            return this.data[flow.OutgressSwitch].Query(flow) + (long) (this._threshold * 0.1);
         }
 
         public ElemType this[Flow key] => this.Query(key);

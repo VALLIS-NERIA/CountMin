@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace Simulation {
     public static class Utils {
-        public static void RunTask(Task[] taskArray) {
+        public static void RunTask(Task[] taskArray, int count=3) {
             var begin = DateTime.Now;
             int i = 0;
             int countOld = 0;
@@ -21,11 +21,14 @@ namespace Simulation {
                 var finish = taskArray.Count(t => t.Status == TaskStatus.RanToCompletion || t.Status == TaskStatus.Faulted);
                 //Console.Write($"\rActive Thread: {trd}, Finished: {finish}, Waiting:{taskArray.Length - i}, Speed: {(int) ((Counter - countOld) / wait)}/s ({(int) ((CounterRerouted - countReOld) / wait)}/{(int) ((CounterSkipped - countSkipOld) / wait)}).                 \r");
                 Console.Write(
-                    $"\rTime Elapsed: {(DateTime.Now - begin).ToString(@"hh\:mm\:ss")}, Thread: {trd}/{finish}/{taskArray.Length - i}, Speed: {(int) ((Counter - countOld) / wait)}/s ({(int) ((CounterRerouted - countReOld) / wait)}/{(int) ((CounterSkipped - countSkipOld) / wait)}).                 \r");
+                    $"\rTime Elapsed: {(DateTime.Now - begin).ToString(@"hh\:mm\:ss")}," +
+                    $" Thread: {trd}/{finish}/{taskArray.Length - i}," +
+                    $" Speed: {(int) ((Counter - countOld) / wait)}/s ({(int) ((CounterRerouted - countReOld) / wait)}" +
+                    $"/{(int) ((CounterSkipped - countSkipOld) / wait)}).                 \r");
                 countOld = Counter;
                 countReOld = CounterRerouted;
                 countSkipOld = CounterSkipped;
-                if (trd < 5 && i < taskArray.Length) {
+                if (trd < count && i < taskArray.Length) {
                     Console.Write("\r");
                     taskArray[i++].Start();
                 }

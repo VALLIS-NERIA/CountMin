@@ -28,7 +28,6 @@ namespace Simulation {
             private MinHeap<object, Entry> heap;
             private int h;
             private int m;
-
             private HashFunc hash;
 
             public SwitchSketch(int _w) {
@@ -93,10 +92,10 @@ namespace Simulation {
 
 
         private Dictionary<Switch, SwitchSketch> data;
-        private int w;
+        public int W { get; private set; }
 
         public FSpaceSaving(int _w) {
-            this.w = _w;
+            this.W = _w;
             this.data = new Dictionary<Switch, SwitchSketch>();
         }
 
@@ -112,7 +111,7 @@ namespace Simulation {
         private void _update(Flow flow, ElemType value) {
             foreach (Switch sw in flow) {
                 if (!data.ContainsKey(sw)) {
-                    data.Add(sw, new SwitchSketch(w));
+                    data.Add(sw, new SwitchSketch(W));
                 }
                 data[sw].Update(flow, value);
             }

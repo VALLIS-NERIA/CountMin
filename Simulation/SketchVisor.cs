@@ -113,7 +113,7 @@ namespace Simulation {
 
         private Dictionary<Switch, SwitchSketch> map;
         public int K { get; private set; }
-
+        public int W => K;
 
         public SketchVisor() : this(1000) { }
 

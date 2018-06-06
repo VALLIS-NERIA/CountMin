@@ -10,8 +10,20 @@ namespace Simulation {
     public class Topology {
         private static Random rnd = new Random();
         public List<Switch> Switches;
+        private Dictionary<Switch, Dictionary<Switch, Path>> _floyd;
+
         public Topology() { Switches = new List<Switch>(); }
-        public Dictionary<Switch, Dictionary<Switch, Path>> Floyd { get; private set; }
+
+        public Dictionary<Switch, Dictionary<Switch, Path>> Floyd {
+            get {
+                if (this._floyd == null) {
+                    FloydCalc();
+                }
+
+                return this._floyd;
+            }
+            private set => this._floyd = value;
+        }
 
         public void FloydCalc() {
             var floyd = new Floyd(this);
@@ -27,12 +39,14 @@ namespace Simulation {
                     json.switches[i].linkedSwitches.Add(Switches.IndexOf(sw2));
                 }
             }
+
             return json;
         }
 
         public Switch RandomSwitch() { return Switches[rnd.Next(Switches.Count / 2 * 2)]; }
 
         public Switch RandomSrc() { return Switches[Zipf.Sample(1, 4) - 1]; }
+
         public Switch RandomDst() { return Switches[Zipf.Sample(1, 4) - 1 + 4]; }
 
         public IEnumerable<KeyValuePair<(Switch src, Switch dst), double>> FetchLinkLoad() {
@@ -40,6 +54,7 @@ namespace Simulation {
             foreach (Switch sw in Switches) {
                 list = list.Concat(sw.LinkLoad.ToDictionary(k => (sw, k.Key), k => k.Value));
             }
+
             return list;
         }
     }

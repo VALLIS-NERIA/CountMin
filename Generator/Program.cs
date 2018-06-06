@@ -314,14 +314,14 @@ namespace Generator {
             public string Name;
             private int K;
 
-            public Pod(string name, int K) {
+            public Pod(string name, int K, Topology topo) {
                 this.Name = name;
                 this.K = K;
                 Aggr = new List<Switch>();
                 Edge = new List<Switch>();
                 for (int i = 0; i < K / 2; i++) {
-                    Aggr.Add(new Switch($"{name} Aggr {i}"));
-                    Edge.Add(new Switch($"{name} Edge {i}", true));
+                    Aggr.Add(new Switch($"{name} Aggr {i}", false, topo));
+                    Edge.Add(new Switch($"{name} Edge {i}", true, topo));
                 }
 
                 foreach (var sw in Aggr) {
@@ -350,11 +350,11 @@ namespace Generator {
             var core = new List<Switch>();
             var pods = new List<Pod>();
             for (int i = 0; i < n * n; i++) {
-                core.Add(new Switch($"Core {i}"));
+                core.Add(new Switch($"Core {i}", false, topo));
             }
 
             for (int i = 0; i < K; i++) {
-                var pod = new Pod($"Pod {i}", K);
+                var pod = new Pod($"Pod {i}", K,topo);
                 pods.Add(pod);
                 pod.CoreLink(core);
             }

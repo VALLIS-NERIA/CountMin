@@ -16,6 +16,7 @@ namespace Simulation {
     }
 
     public interface ITopoSketch <in TKey, TValue> {
+        int W { get; }
         void Update(TKey key, TValue value);
         TValue Query(TKey key);
         TValue this[TKey key] { get; }

@@ -17,14 +17,14 @@ namespace Simulator {
     using ElemType = Int64;
 
     static partial class Program {
-        static int[] k_list = {1000, 1500, 2000, 2500, 3000};
-        static string[] topo_list = {"Fattree", "HyperX"};
+        internal static int[] k_list = {1000, 1500, 2000, 2500, 3000};
+        internal static string[] topo_list = {"Fattree" /*, "HyperX"*/};
 
-        static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
+        internal static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
 
         //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
         //private static int[] count_list = {50000, 100000, 200000, 300000};
-        private static int[] count_list = {50000,100000,150000,200000, 250000,300000};
+        internal static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
 
 
         static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ITopoSketch<Flow, ElemType> sketch) {
@@ -51,148 +51,87 @@ namespace Simulator {
             return newFlow;
         }
 
-
-        private static Task[] BenchMark(string name = "SketchVisor", bool head = true) {
-            if (head) {
-                Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");
+        static List<Flow> ReRouteTopWithSketch(Topology topo, List<Flow> flowSet, ITopoSketch<Flow, ElemType> sketch, double thres) {
+            foreach (var sw in topo.Switches) {
+                sw.ClearFlow();
             }
 
-            var taskList = new List<Task>();
-            foreach (RoutingAlgorithm algorithm in algo_list)
-            foreach (string topos in topo_list)
-            foreach (var flow_count in count_list)
-            foreach (int k in new[] {0, 1000}) {
-                var topo = LoadTopo(topos + ".json");
-                var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
-                //var fin = $"udp12w_{topos}_{algorithm.Method.ReflectedType.Name}";
-                var fout = $"REROUTE_{name}_k{k}_{fin}.json";
-                var task =
-                    new Task(() =>
-                    {
-                        try {
-                            var flowReal = LoadFlow(fin, topo);
-                            var flowSet = k != 0 ? LoadFlow(fout, topo) : LoadFlow(fin, topo);
-                            //var flow_count = flowSet.Count;
-                            double maxLoad = 0;
-                            var iter0 = flowReal.GetEnumerator();
-                            var iter = flowSet.GetEnumerator();
-                            iter.MoveNext();
-                            iter0.MoveNext();
-                            while (true) {
-                                var flow0 = iter0.Current;
-                                var flow = iter.Current;
-                                flow.Traffic = flow0.Traffic;
-                                flow.Assign();
-                                if (!iter.MoveNext() ||
-                                    !iter0.MoveNext()) {
-                                    break;
-                                }
-                            }
-
-                            var load = from sw in topo.FetchLinkLoad() select sw.Value;
-                            iter.Dispose();
-                            iter0.Dispose();
-                            Console.WriteLine($"{name,15}{topos,10}{flow_count,10}{k,10}{load.Max(),15:F0}{load.Average(),15:F2}{load.StandardDeviation(),15:F2}");
-                        }
-                        catch { }
-                    });
-                taskList.Add(task);
+            flowSet.Sort((f1, f2) => (int) (f2.Traffic - f1.Traffic));
+            foreach (Flow flow in flowSet) {
+                sketch.Update(flow, (long) flow.Traffic);
             }
 
-            return taskList.ToArray();
+            var newFlow = new List<Flow>();
+            foreach (Flow flow in flowSet) {
+                newFlow.Add(new Flow(flow) {Traffic = sketch.Query(flow)});
+            }
+
+            ReRoute(newFlow, Greedy.FindPath, (int) (thres * flowSet.Count));
+            return newFlow;
         }
 
-        static void SketchCompareTime() {
-            Console.WriteLine($"{"topology",10}{"flowcount",10}{"k",10}{"sv_k",10},{"CountMax",15}{"SketchVisor",15}");
-            foreach (RoutingAlgorithm algorithm in algo_list)
-            foreach (string topos in topo_list)
-            foreach (var _flow_count in count_list)
-            foreach (int k in k_list) {
-                if (k != 1000 && _flow_count != 200000) continue;
-                ;
-                var topo = LoadTopo(topos + ".json");
-                var fin = $"zipf_{_flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
-                //var fin = $"udp12w_{topos}_OSPF.json";
-                fin = $"REROUTE_CountMax_k{k}_{fin}.json";
-                var flowSet = LoadFlow(fin, topo);
-                var flow_count = flowSet.Count;
-                var cm = new CountMin(k, 2);
-                var sv = new FSpaceSaving((int) (1 * k));
-                var cs = new CountSketch((int) (1 * k), 2);
-                var t00 = DateTime.Now;
-                foreach (Flow flow in flowSet) {
-                    cm.Update(flow, (ElemType) flow.Traffic);
-                }
 
-                var t01 = DateTime.Now;
-                var t10 = DateTime.Now;
-                foreach (Flow flow in flowSet) {
-                    sv.Update(flow, (ElemType) flow.Traffic);
-                }
-
-                var t11 = DateTime.Now;
-                var t20 = DateTime.Now;
-                foreach (Flow flow in flowSet) {
-                    cs.Update(flow, (ElemType) flow.Traffic);
-                }
-
-                var t21 = DateTime.Now;
-                var t0 = t01 - t00;
-                var t1 = t11 - t10;
-                var t2 = t21 - t20;
-                Console.WriteLine($"{topos,10},{flow_count,10},{k,10},{t0.TotalMilliseconds,15},{t1.TotalMilliseconds,15},{t2.TotalMilliseconds,15}");
-            }
-        }
+        private delegate Topology TopoFactory();
 
         static Task[] ConcurrentReroute() {
-            var taskList = new List<Task>();
-            var k = 1000;
-            foreach (string topos in topo_list)
-            foreach (var flow_count in count_list) {
-                void _reroute(object obj) {
-                    try {
-                        ITopoSketch<Flow, ElemType> sketch = (ITopoSketch<Flow, long>) obj;
-                        var topo = LoadTopo(topos + ".json");
-                        (sketch as CountMax)?.Init(topo);
-                        var fin = $"zipf_{flow_count}_{topos}_OSPF";
-                        var flowSet = LoadFlow(fin, topo);
-                        var t00 = DateTime.Now;
-                        foreach (Flow flow in flowSet) {
-                            sketch.Update(flow, (ElemType) flow.Traffic);
-                        }
-
-                        var t01 = DateTime.Now;
-                        double time = (t01 - t00).TotalMilliseconds;
-                        var list = new List<Tup>();
-                        foreach (Flow flow in flowSet) {
-                            var query_cm = sketch.Query(flow);
-                            list.Add((flow.Traffic, query_cm));
-                        }
-
-                        foreach (var threshold in new[] {0.01, 0.05}.Reverse()) {
-                            var ll = RelativeErrorOfTop(list, threshold);
-                            Console.WriteLine($"\r{topos}, {flow_count}, {k}, {threshold}, {obj.GetType().Name}, {ll.Average()}, {time}");
-                        }
-
-                        var fout = $"REROUTE_{obj.GetType().Name}_k{k}_{fin}.json";
-                        var newFlow = ReRouteWithSketch(topo, flowSet, sketch);
-                        using (var sw = new StreamWriter(fout)) {
-                            sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
-                        }
+            void _reroute(object obj) {
+                //try
+                {
+                    var arg = ((IFS obj, string topos, int flow_count, TopoFactory factory)) obj;
+                    var topo = arg.factory();
+                    var sketch = arg.obj;
+                    sketch.Init(topo);
+                    var fin = $"{arg.topos}_{arg.flow_count}";
+                    var flowSet = LoadFlow(fin, topo);
+                    var t00 = DateTime.Now;
+                    foreach (Flow flow in flowSet) {
+                        sketch.Update(flow, (ElemType) flow.Traffic);
                     }
-                    catch (Exception e) {
-                        Console.WriteLine(e.Message);
-                        Console.WriteLine(e.StackTrace);
+
+                    var t01 = DateTime.Now;
+                    double time = (t01 - t00).TotalMilliseconds;
+                    var list = new List<Tup>();
+                    foreach (Flow flow in flowSet) {
+                        var query_cm = sketch.Query(flow);
+                        list.Add((flow.Traffic, query_cm));
                     }
+
+                    //foreach (var threshold in new[] {0.01, 0.05}.Reverse()) {
+                    //    var ll = RelativeErrorOfTop(list, threshold);
+                    //    Console.WriteLine($"\r{topos}, {flow_count}, {k}, {threshold}, {sketch.SketchClassName}, {ll.Average()}, {time}");
+                    //}
+
+                    var fout = $"REROUTE_{sketch.SketchClassName}_k{sketch.W}_{fin}.json";
+                    var newFlow = ReRouteTopWithSketch(topo, flowSet, sketch, 0.005);
+                    using (var sw = new StreamWriter(fout)) {
+                        sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToCoflowJson(topo)));
+                    }
+
+                    Console.WriteLine($"\r{arg.topos}, {arg.flow_count}, {sketch.W}");
                 }
+                //catch (Exception e) {
+                //    Console.WriteLine(e.Message);
+                //    Console.WriteLine(e.StackTrace);
+                //}
+            }
 
-                var cm = new CountMax(k, 2);
-                var cs = new CountSketch(k, 2);
-                var fss = new FSpaceSaving(k);
-
-                taskList.Add(new Task(_reroute, cm));
-                taskList.Add(new Task(_reroute, cs));
-                taskList.Add(new Task(_reroute, fss));
+            var taskList = new List<Task>();
+            var ths = 1000;
+            foreach (int k in k_list)
+            foreach (string topos in topo_list)
+            foreach (var flow_count in new[] {200000}) {
+                TopoFactory topoF = () => Generator.Program.FatTreeGen(8);
+                IFS cm = new FilteredSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
+                int k_sv = (int) (1.2 * k);
+                IFS sv = new FilteredSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
+                IFS cs = new FilteredSketch<CountSketch.SwitchSketch>(k, 2, ths, () => new CountSketch.SwitchSketch(k, 2));
+                IFS fss = new FilteredSketch<FSpaceSaving.SwitchSketch>(k, 2, ths, () => new FSpaceSaving.SwitchSketch(k));
+                //_reroute((cm, topos, flow_count, topoF));
+                //_reroute((cs, topos, flow_count, topoF));
+                //_reroute((fss, topos, flow_count, topoF));
+                taskList.Add(new Task(_reroute, (cm, topos, flow_count, topoF)));
+                taskList.Add(new Task(_reroute, (cs, topos, flow_count, topoF)));
+                taskList.Add(new Task(_reroute, (fss, topos, flow_count, topoF)));
             }
 
 
@@ -210,13 +149,12 @@ namespace Simulator {
                 hy.Switches[i].IsEdge = i % 2 == 0;
             }
 
-            var ths = 10000; 
+            var ths = 1000;
             //anal.WriteLine("topo, k, flow_count, threshold, cm_avg, cm_hit, cm_time, sv_avg, sv_hit, sv_time, cs_avg, cs_hit, cs_time, cm_min, cm_max, sv_min, sv_max, cs_min, cs_max");
             //foreach (RoutingAlgorithm algorithm in algo_list)
             foreach (string topos in topo_list)
             foreach (var flow_count in count_list)
-            foreach (int k in k_list) 
-            {
+            foreach (int k in k_list) {
                 //if (k != 1000 /*&& flow_count != 150000 && flow_count!=250000*/) continue;
 
                 void _do() {
@@ -228,15 +166,15 @@ namespace Simulator {
                     //var fin = $"udp12w_{topos}_OSPF.json";
                     var flowSet = LoadFlow(fin, topo);
                     //var flow_count = flowSet.Count;
-                    var cm = new FilteredSketch<CountMax.SwitchSketch>(ths);
-                    cm.Init(topo,k,2,()=>new CountMax.SwitchSketch(k, 2));
+                    var cm = new FilteredSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
+                    cm.Init(topo);
                     int k_sv = (int) (1.2 * k);
-                    var sv = new FilteredSketch<SketchVisor.SwitchSketch>(ths);
-                    sv.Init(topo, k, 2, () => new SketchVisor.SwitchSketch(k_sv));
-                    var cs = new FilteredSketch<CountSketch.SwitchSketch>(ths);
-                    cs.Init(topo, k, 2, () => new CountSketch.SwitchSketch(k, 2));
-                    var fss = new FilteredSketch<FSpaceSaving.SwitchSketch>(ths);
-                    fss.Init(topo, k, 2, () => new FSpaceSaving.SwitchSketch(k));
+                    var sv = new FilteredSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
+                    sv.Init(topo);
+                    var cs = new FilteredSketch<CountSketch.SwitchSketch>(k, 2, ths, () => new CountSketch.SwitchSketch(k, 2));
+                    cs.Init(topo);
+                    var fss = new FilteredSketch<FSpaceSaving.SwitchSketch>(k, 2, ths, () => new FSpaceSaving.SwitchSketch(k));
+                    fss.Init(topo);
                     //Console.WriteLine($"{topos}, {flow_count}, {k} initing                                    ");
 
                     var t00 = DateTime.Now;
@@ -310,7 +248,7 @@ namespace Simulator {
 
                     //
                     //
-                    foreach (var threshold in new[] { 0.005, 0.01}.Reverse()) {
+                    foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
                         var ll_cm = RelativeErrorOfTop(list_cm, threshold);
                         var count_cm = ll_cm.Count(d => d != 0);
                         var t_cm = list_cm.Where(t => t.Item2 != 0).Sum(t => t.Item1);
@@ -331,7 +269,8 @@ namespace Simulator {
 
                         var total = list_cm.Sum(t => t.Item1);
                         //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
-                        Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold}, {ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()},{t_cm / total},{t_fss / total},{t_cs / total},{cm_time},{fss_time},{cs_time}");
+                        Console.WriteLine(
+                            $"\r{topos}, {flow_count}, {k},{threshold}, {ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()},{t_cm / total},{t_fss / total},{t_cs / total},{cm_time},{fss_time},{cs_time}");
                         //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold} , {ll_fss.Average()} , {ll_fss.Min()} , {ll_fss.Max()} , {count_fss}                                ");
                         //    //lock (anal) {
                         //    //    anal.Write($"{topos},{k},{flow_count},{threshold} ,");
@@ -444,29 +383,19 @@ namespace Simulator {
                     var ll = RelativeErrorOfTop(l, threshold);
 
                     Console.WriteLine($"\r{w}, {d}, {threshold},{llf.Average()}, {ll.Average()}, {(t - t00).TotalMilliseconds},{(t11 - t).TotalMilliseconds}");
-
                 }
             }
         }
 
         static void TTT() {
             var topo = global::Generator.Program.FatTreeGen(8);
-            var flowSet = LoadFlow("UDP fattree.json", topo);
-            int w = 10000;
-            int d = 2;
-            var cm = new Simulation.CountMaxSketch.Sketch(w, d);
-            foreach (Flow flow in flowSet) {
-                cm.Update(flow, (ElemType) flow.Traffic);
+            foreach (int count in count_list) {
+                var flowSet = LoadFlow($"Fattree_{count}", topo);
+                var traffics = from f in flowSet select f.Traffic;
+                var total = traffics.Sum();
+                var hhs = from t in traffics where t > (double) total / 10000d select t;
+                Console.WriteLine($"{total}, {total / 10000}, {hhs.Count()}");
             }
-
-            var l = new List<Tup>();
-            foreach (Flow flow in flowSet) {
-                var qcm = cm.Query(flow);
-                l.Add((flow.Traffic, qcm));
-            }
-
-            var lh = HHFilter(l, 0.0005).OrderByDescending(o => o).ToList();
-            ;
         }
 
         static void Main() {
@@ -481,8 +410,8 @@ namespace Simulator {
             //SketchAppr();
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
-            taskList = taskList.Concat(SketchCompareAppr());
-            //taskList = taskList.Concat(ConcurrentReroute());
+            //taskList = taskList.Concat(SketchCompareAppr());
+            taskList = taskList.Concat(ConcurrentReroute());
             //taskList = taskList.Concat(Prototype());
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));

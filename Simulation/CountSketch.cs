@@ -161,11 +161,11 @@ namespace Simulation {
         private static Random rnd = new Random();
 
         private Dictionary<Switch, SwitchSketch> data;
-        private int w;
+        public int W { get; private set; }
         private int d;
 
         public CountSketch(int _w, int _d) {
-            this.w = _w;
+            this.W = _w;
             this.d = _d;
             this.data=new Dictionary<Switch, SwitchSketch>();
         }
@@ -182,7 +182,7 @@ namespace Simulation {
         private void _update(Flow flow, ElemType value) {
             foreach (Switch sw in flow) {
                 if (!data.ContainsKey(sw)) {
-                    data.Add(sw, new SwitchSketch(w, d));
+                    data.Add(sw, new SwitchSketch(W, d));
                 }
                 data[sw].Update(flow, value);
             }
