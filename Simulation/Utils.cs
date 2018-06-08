@@ -55,12 +55,11 @@ namespace Simulation {
         public static int CounterRerouted = 0;
         public static int CounterSkipped = 0;
 
-        public static void ReRoute(List<Flow> flowSet, RoutingAlgorithm algo, int count = 0) {
+        public static void ReRoute(IEnumerable<Flow> flowSet, RoutingAlgorithm algo, int count = 0) {
             if (count == 0) {
                 int i = 1;
                 //foreach (Flow flow in flowSet) {
-                for (int j = 0; j < flowSet.Count; j++) { 
-                    var flow = flowSet[j];
+                foreach (Flow flow in flowSet) {
                     // DO NOT REROUTE BLANK FLOWS
                     ++Counter;
                     if (flow.Traffic <= 1) {
@@ -71,7 +70,6 @@ namespace Simulation {
                     var dst = flow.OutgressSwitch;
                     flow.OverrideAssign(algo(src, dst));
                     CounterRerouted++;
-                    //Console.Write($"\r{Counter}");
                 }
             }
             else {

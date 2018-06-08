@@ -14,12 +14,27 @@ namespace Simulation {
 
         public FlowJson() { path = new List<int>(); }
 
-        public Flow ToFlow(Topology topo) {
+        public virtual Flow ToFlow(Topology topo) {
             var f = new Flow();
             foreach (var swIdx in this.path) {
                 f.Nodes.Add(topo.Switches[swIdx]);
             }
             f.Traffic = this.traffic;
+            return f;
+        }
+    }
+
+    public class ReroutedFlowJson : FlowJson {
+        public double origtraffic { get; set; }
+
+        public ReroutedFlow ToFlow(Topology topo) {
+            var f = new ReroutedFlow();
+            foreach (var swIdx in this.path) {
+                f.Nodes.Add(topo.Switches[swIdx]);
+            }
+
+            f.Traffic = this.traffic;
+            f.OriginTraffic = this.origtraffic;
             return f;
         }
     }
@@ -38,12 +53,36 @@ namespace Simulation {
         }
     }
 
+    public class ReroutedCoflowJson {
+        public List<ReroutedFlowJson> flows { get; set; }
+
+        public ReroutedCoflowJson() { flows = new List<ReroutedFlowJson>(); }
+
+        public List<ReroutedFlow> ToCoflow(Topology topo) {
+            var coflow = new List<ReroutedFlow>();
+            foreach (var flowJson in this.flows) {
+                coflow.Add(flowJson.ToFlow(topo));
+            }
+
+            return coflow;
+        }
+    }
+
     public static partial class Helper {
         public static CoflowJson ToCoflowJson(this List<Flow> coflow, Topology topo) {
             var json = new CoflowJson();
             foreach (Flow flow in coflow) {
                 json.flows.Add(flow.ToFlowJson(topo));
             }
+            return json;
+        }
+
+        public static ReroutedCoflowJson ToReroutedCoflowJson(this List<ReroutedFlow> coflow, Topology topo) {
+            var json = new ReroutedCoflowJson();
+            foreach (ReroutedFlow flow in coflow) {
+                json.flows.Add(flow.ToReroutedFlowJson(topo));
+            }
+
             return json;
         }
     }

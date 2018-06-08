@@ -6,6 +6,29 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Simulation {
+    public class ReroutedFlow : Flow {
+        public double OriginTraffic { get; set; }
+
+        public ReroutedFlow(Flow f) : base(f) { }
+
+        public ReroutedFlow():base() {}
+
+        public ReroutedFlowJson ToReroutedFlowJson(Topology topo) {
+            var json = new ReroutedFlowJson();
+            foreach (var sw in this.Nodes) {
+                if (!topo.Switches.Contains(sw)) {
+                    throw new ArgumentException("This flow isn't in the given topology");
+                }
+
+                var swIdx = topo.Switches.IndexOf(sw);
+                json.path.Add(swIdx);
+                json.traffic = this.Traffic;
+                json.origtraffic = this.OriginTraffic;
+            }
+
+            return json;
+        }
+    }
     public class Flow : IEnumerable<Switch> {
         //public string name;
         public Switch IngressSwitch => Nodes.First();
