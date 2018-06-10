@@ -109,23 +109,24 @@ namespace Simulation {
         }
 
         public Dictionary<Switch, Dictionary<Switch, Path>> Calc() {
-            foreach (Switch k in topo.Switches) {
-                foreach (Switch i in topo.Switches) {
-                    foreach (Switch j in topo.Switches) {
-                        var ij = this.table[i][j];
-                        var ik = this.table[i][k];
-                        var kj = this.table[k][j];
-                        if (ij.Length > ik.Length + kj.Length) {
-                            this.table[i][j] = this.table[i][k] + this.table[k][j];
-                        }
-                        else if (ij.Length == ik.Length + kj.Length) {
-                            if (rnd.NextDouble() < 0.5) {
-                                this.table[i][j] = this.table[i][k] + this.table[k][j];
-                            }
-                        }
-                    }
+            foreach (Switch k in topo.Switches)
+            foreach (Switch i in topo.Switches)
+            foreach (Switch j in topo.Switches) {
+                var ij = this.table[i][j];
+                var ik = this.table[i][k];
+                var kj = this.table[k][j];
+                if (ij.Length > ik.Length + kj.Length) {
+                    this.table[i][j] = this.table[i][k] + this.table[k][j];
                 }
+
+                //else if (ij.Length == ik.Length + kj.Length) {
+                //    if (rnd.NextDouble() < 0.1) {
+                //        this.table[i][j] = this.table[i][k] + this.table[k][j];
+                //    }
+                //}
             }
+                
+            
             return this.table;
         }
     }
@@ -191,6 +192,28 @@ namespace Simulation {
             memo.Visited[src] = false;
 
             return shortest;
+        }
+    }
+
+
+    public static class GreedySpine {
+        public static Path FindPath(Switch src, Switch dst) {
+            var path = src.Topology.Floyd[src][dst];
+            if (path.MaxLoad == 0) {
+                return path;
+            }
+
+            double min = double.MaxValue;
+            var ret = new Path();
+            for (int i = 0; i < src.Topology.Switches.Count / 3; ++i) {
+                var aggr = src.Topology.Switches[i];
+                path[1] = aggr;
+                if (path.MaxLoad < min) {
+                    ret = new Path(path);
+                }
+            }
+
+            return ret;
         }
     }
 

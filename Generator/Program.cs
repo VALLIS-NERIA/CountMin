@@ -36,13 +36,14 @@ namespace Generator {
                     //var traffics = (from f in refSet.flows select f.traffic * (300000d / count)).ToArray();
                     var refTraffics = (from f in refSet.flows orderby f.traffic descending select f.traffic).ToArray();
                     var traffics = new int[count];
-                    double scale = (double) (count-1) / (refTraffics.Length-1);
+                    double scale = (double) (count - 1) / (refTraffics.Length - 1);
                     for (int i = 0; i < count; i++) {
                         double m = i / scale;
                         if (Math.Abs(m - Math.Round(m)) < 0.001) {
                             traffics[i] = (int) refTraffics[(int) Math.Round(m)];
                             continue;
                         }
+
                         int a = (int) Math.Floor(m);
                         int b = (int) -Math.Floor(-m);
                         double c = m - a;
@@ -55,10 +56,12 @@ namespace Generator {
                     var flowSet = new List<Flow>();
                     var flowCount = traffics.Length;
                     while (flowCount-- > 0) {
-                        var src = edges[rnd.Next() % len];
-                        var dst = edges[rnd.Next() % len];
+                        //var src = edges[rnd.Next() % len];
+                        //var dst = edges[rnd.Next() % len];
+                        var src = edges.GetRandom();
+                        var dst = edges.GetRandom();
                         while (dst == src) {
-                            dst = edges[rnd.Next() % len];
+                            dst = edges.GetRandom();
                         }
 
                         flowSet.Add(new Flow(floyd[src][dst], (long) (traffics[flowCount])));
@@ -72,6 +75,7 @@ namespace Generator {
 
                     Console.WriteLine($"{topoName}_{count}.json");
                 }
+
                 taskList.Add(new Task(_do));
                 _do();
             }
@@ -89,12 +93,10 @@ namespace Generator {
             Directory.SetCurrentDirectory(@"..\..\..\data");
             //InitGen();
             var ft = FatTreeGen(8);
-            var hy = HyperXGen(9);
-            for (int i = 0; i < hy.Switches.Count; i++) {
-                hy.Switches[i].IsEdge = i % 2 == 0;
-            }
+            var sp = LeafSpineGen();
 
-            NewGen(ft, "Fattree");
+            NewGen(sp, "Spine");
+            //NewGen(ft, "Fattree");
             //NewGen(hy, "HyperX");
             foreach (int count in count_list) {
                 var refSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText($"Fattree_{count}.json")).flows.Select(f => f.traffic);
@@ -354,7 +356,7 @@ namespace Generator {
             }
 
             for (int i = 0; i < K; i++) {
-                var pod = new Pod($"Pod {i}", K,topo);
+                var pod = new Pod($"Pod {i}", K, topo);
                 pods.Add(pod);
                 pod.CoreLink(core);
             }
@@ -366,6 +368,29 @@ namespace Generator {
             }
 
             topo.Switches = switches;
+            return topo;
+        }
+
+        public static Topology LeafSpineGen(int K = 27) {
+            var topo = new Topology();
+            var aggr = new List<Switch>();
+            var edges = new List<Switch>();
+
+
+            for (int i = 0; i < 2 * K; ++i) {
+                edges.Add(new Switch($"Edge {i}", true, topo));
+            }
+
+            for (int i = 0; i < K; ++i) {
+                var ag = new Switch($"Aggr {i}", false, topo);
+                aggr.Add(ag);
+                foreach (Switch sw in edges) {
+                    ag.Link(sw);
+                }
+            }
+
+            var sws = aggr.Concat(edges).ToList();
+            topo.Switches = sws;
             return topo;
         }
 

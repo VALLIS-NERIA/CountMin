@@ -6,9 +6,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-
+using MathNet.Numerics.Distributions;
 namespace Simulation {
     public static class Utils {
+        public static T GetRandom <T>(this IEnumerable<T> list) {
+            var enumerable = list.ToList();
+            return enumerable.ElementAt(Binomial.Sample(0.5, enumerable.Count()));
+        }
+
         public static void RunTask(Task[] taskArray, int count=3) {
             var begin = DateTime.Now;
             int i = 0;
@@ -40,7 +45,8 @@ namespace Simulation {
             while (true) {
                 var c = Console.ReadKey();
                 if (c.Key == ConsoleKey.Q) {
-                    Environment.Exit(0);
+                    return;
+                    //Environment.Exit(0);
                 }
             }
         }

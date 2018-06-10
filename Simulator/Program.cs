@@ -18,7 +18,13 @@ namespace Simulator {
 
     static partial class Program {
         internal static int[] k_list = {1000, 1500, 2000, 2500, 3000};
-        internal static string[] topo_list = {"Fattree" /*, "HyperX"*/};
+
+        internal static string[] topo_list =
+        {
+            //"Fattree" ,
+            "Spine" ,
+             /*"HyperX",*/
+        };
 
         internal static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
 
@@ -26,6 +32,33 @@ namespace Simulator {
         //private static int[] count_list = {50000, 100000, 200000, 300000};
         internal static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
 
+        static void Main() {
+            Directory.SetCurrentDirectory(@"..\..\..\data");
+#if DEBUG
+            Debug.WriteLine("--DEBUG--");
+#endif
+            //Filter();
+            //TTT();
+            IEnumerable<Task> taskList = new List<Task>();
+            //taskList = taskList.Concat(FSSTesting());
+            //SketchAppr();
+            //taskList = taskList.Concat(CMReroute());
+            //SVReroute();
+            taskList = taskList.Concat(SketchCompareAppr());
+            //taskList = taskList.Concat(ConcurrentReroute());
+            //taskList = taskList.Concat(Prototype());
+            //PartialReroute();
+            //taskList = taskList.Concat(BenchMark("Original"));
+            //taskList = taskList.Concat(BenchMark("CountMax", false));
+            //taskList = taskList.Concat(BenchMark(nameof(FSpaceSaving), false));
+            //taskList = taskList.Concat(BenchMark("CountSketch", false));
+            //SketchAppr();
+            //SketchCompareTime();
+            var taskArray = taskList.ToArray();
+            RunTask(taskArray);
+            RerouteEval();
+            Console.ReadLine();
+        }
 
         static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ITopoSketch<Flow, ElemType> sketch) {
             var topo = LoadTopo(topoJson);
@@ -58,17 +91,15 @@ namespace Simulator {
             }
 
             flowSet.Sort((f1, f2) => (int) (f2.Traffic - f1.Traffic));
-            foreach (Flow flow in flowSet) {
-                sketch.Update(flow, (long) flow.Traffic);
-            }
 
             var newFlow = new List<ReroutedFlow>();
             foreach (Flow flow in flowSet) {
+                //ReroutedFlow newf = new ReroutedFlow(flow) {Traffic = sketch.Query(flow), OriginTraffic = flow.Traffic};
                 ReroutedFlow newf = new ReroutedFlow(flow) {Traffic = sketch.Query(flow), OriginTraffic = flow.Traffic};
                 newFlow.Add(newf);
             }
 
-            ReRoute(newFlow, Greedy.FindPath, (int) (thres * flowSet.Count));
+            ReRoute(newFlow, GreedySpine.FindPath, (int) (thres * flowSet.Count));
             return newFlow;
         }
 
@@ -104,7 +135,7 @@ namespace Simulator {
                     //}
 
                     var fout = $"REROUTE_{sketch.SketchClassName}_k{sketch.W}_{fin}.json";
-                    var newFlow = ReRouteTopWithSketch(topo, flowSet, sketch, 0.005);
+                    var newFlow = ReRouteTopWithSketch(topo, flowSet, sketch, 0.01);
                     using (var sw = new StreamWriter(fout)) {
                         sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToReroutedCoflowJson(topo)));
                     }
@@ -119,10 +150,11 @@ namespace Simulator {
 
             var taskList = new List<Task>();
             var ths = 1000;
-            foreach (int k in new[] {1000})
+            foreach (int k in k_list)
             foreach (string topos in topo_list)
             foreach (var flow_count in count_list) {
-                TopoFactory topoF = () => Generator.Program.FatTreeGen(8);
+                if (k != 1000 && flow_count != 200000) continue;
+                TopoFactory topoF = () => Generator.Program.LeafSpineGen();
                 IFS cm = new FilteredSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
                 int k_sv = (int) (1.2 * k);
                 IFS sv = new FilteredSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
@@ -146,12 +178,9 @@ namespace Simulator {
             var time = new StreamWriter("timenew.csv");
             var anal = new StreamWriter("analysis_All.csv");
             var ft = Generator.Program.FatTreeGen(8);
-            var hy = Generator.Program.HyperXGen(9);
-            for (int i = 0; i < hy.Switches.Count; i++) {
-                hy.Switches[i].IsEdge = i % 2 == 0;
-            }
+            var sp = Generator.Program.LeafSpineGen();
 
-            var ths = 1000;
+            var ths = 200;
             //anal.WriteLine("topo, k, flow_count, threshold, cm_avg, cm_hit, cm_time, sv_avg, sv_hit, sv_time, cs_avg, cs_hit, cs_time, cm_min, cm_max, sv_min, sv_max, cs_min, cs_max");
             //foreach (RoutingAlgorithm algorithm in algo_list)
             foreach (string topos in topo_list)
@@ -161,7 +190,7 @@ namespace Simulator {
 
                 void _do() {
                     //var flow_count = "zipf_200000";
-                    var topo = topos == "HyperX" ? hy : ft;
+                    var topo = topos == "Spine" ? sp : ft;
                     //var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
                     var fin = $"{topos}_{flow_count}";
                     //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
@@ -247,7 +276,7 @@ namespace Simulator {
                         var query_fss = fss.Query(flow);
                         list_fss.Add((flow.Traffic, query_fss));
                     }
-
+                    //data_cm.Close();
                     //
                     //
                     foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
@@ -390,10 +419,10 @@ namespace Simulator {
         }
 
         static void RerouteEval() {
-            GC.TryStartNoGCRegion(2L * 1024 * 1024 * 1024);
+            //GC.TryStartNoGCRegion(2L * 1024 * 1024 * 1024);
             foreach (string topos in topo_list)
             foreach (var flow_count in count_list) {
-                var topo1 = Generator.Program.FatTreeGen(8);
+                var topo1 = topos == "Fattree" ? Generator.Program.FatTreeGen(8) : Generator.Program.LeafSpineGen();
                 var flow1 = LoadFlow($"{topos}_{flow_count}", topo1);
                 flow1.ForEach(f => f.Assign());
                 var max_orig = topo1.FetchLinkLoad().Max(o => o.Value);
@@ -401,7 +430,7 @@ namespace Simulator {
                     if (k != 1000 && flow_count != 200000) continue;
                     Console.Write($"{flow_count}, {k}, {max_orig}");
                     foreach (var sketch_str in new[] {nameof(CountMax), nameof(FSpaceSaving), nameof(CountSketch)}) {
-                        var topo2 = Generator.Program.FatTreeGen(8);
+                        var topo2 = topos == "Fattree" ? Generator.Program.FatTreeGen(8) : Generator.Program.LeafSpineGen();
                         var flow2 = JsonConvert.DeserializeObject<ReroutedCoflowJson>(File.ReadAllText($"REROUTE_{sketch_str}_k{k}_{topos}_{flow_count}.json")).ToCoflow(topo2);
                         flow2.ForEach(f => f.Traffic = f.OriginTraffic);
                         flow2.ForEach(f => f.Assign());
@@ -425,33 +454,8 @@ namespace Simulator {
             }
         }
 
-        static void Main() {
-            Directory.SetCurrentDirectory(@"..\..\..\data");
-#if DEBUG
-            Debug.WriteLine("--DEBUG--");
-#endif
-            //Filter();
-            //TTT();
-            RerouteEval();
-            IEnumerable<Task> taskList = new List<Task>();
-            //taskList = taskList.Concat(FSSTesting());
-            //SketchAppr();
-            //taskList = taskList.Concat(CMReroute());
-            //SVReroute();
-            //taskList = taskList.Concat(SketchCompareAppr());
-            //taskList = taskList.Concat(ConcurrentReroute());
-            //taskList = taskList.Concat(Prototype());
-            //PartialReroute();
-            //taskList = taskList.Concat(BenchMark("Original"));
-            //taskList = taskList.Concat(BenchMark("CountMax", false));
-            //taskList = taskList.Concat(BenchMark(nameof(FSpaceSaving), false));
-            //taskList = taskList.Concat(BenchMark("CountSketch", false));
-            //SketchAppr();
-            //SketchCompareTime();
-            var taskArray = taskList.ToArray();
-            RunTask(taskArray);
-        }
 
+        
 
         private static List<double> RelativeErrorOfTop(IEnumerable<(double, double)> list, double threshold) {
             var list1 = list;

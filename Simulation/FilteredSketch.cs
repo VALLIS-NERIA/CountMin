@@ -102,7 +102,7 @@ namespace Simulation {
 
             //return result.Max() + (long)(this._threshold * 0.5);
             if (!flow.OutgressSwitch.IsEdge) throw new ArgumentException("The flow's egress switch is not edge");
-            return this.data[flow.OutgressSwitch].Query(flow) + (long) (this._threshold * 0.1);
+            return this.data[flow.OutgressSwitch].Query(flow) + (long) (this._threshold * 0.0);
         }
 
         public ElemType this[Flow key] => this.Query(key);
