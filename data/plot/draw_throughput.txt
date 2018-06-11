@@ -4,11 +4,11 @@ set style fill solid border -1
 
 unset key
 
-set yrange[0:40]
-set yl 'Throughput (Gbit/s)'
-set ytics("0" 0, "20" 20, "40" 40)
+set yrange[0:2.5]
+set yl 'Number of Processed Packets'
+set ytics ("0" 0, "0.5k" 0.5, "1k" 1, "1.5k" 1.5, "2k" 2, "2.5k" 2.5)
 set xrange[-0.5:3.5]
-set xtics norotate ("None" 0, "CountMax" 1, "FSS" 2, "CountSketch" 3) font ",16"
+set xtics norotate ("None" 0, "CountMax" 1, "FSS" 2, "CountSketch" 3) font ",18"
 set xl "Installed Sketch"
 set output "./fig/throughput.eps"
 plot 'throughput.txt' using 1 fill transparent solid 0.5 with histogram 

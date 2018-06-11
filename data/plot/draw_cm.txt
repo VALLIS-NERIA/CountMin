@@ -16,7 +16,7 @@ FILE = "./cm_d_cpu.txt"
 set output OUTDIR."cm_d_cpu".SUBFIX
 
 plot \
-FILE u 1:2 with linespoints pointtype 4 dt  2 lw 4 pointsize 2 title 'CountMax',
+FILE u 1:2 with linespoints pointtype 4 dt  2 lw 5.5 pointsize 2 title 'CountMax',
 
 
 
@@ -34,7 +34,7 @@ set ytics ("0" 0, "0.2" 0.2, "0.4" 0.4, "0.6" 0.6, "1" 1)
 set yl 'Average Estimation Error'
 
 plot \
-FILE u 1:2 with linespoints pointtype 4 dt  2 lw 4 pointsize 2 title 'CountMax',
+FILE u 1:2 with linespoints pointtype 4 dt  2 lw 5.5 pointsize 2 title 'CountMax',
 
 unset key
 set key default

@@ -10,23 +10,23 @@ set key left bottom box
 set yrange[0.6:1]
 set ytics ("0.5" 0.5, "0.6" 0.6, "0.7" 0.7, "0.8" 0.8, "0.9" 0.9, "1" 1)
 set xrange[100:300]
-set xtics ("1" 100, "2" 2000, "3" 300)
+set xtics 50
 
-set xl 'k ({/Symbol \264}10^2)'
+set xl '{/Times-Italic k}'
 set yl 'Max. Link Load Ratio'
 
 FILE = "./".TOPO."_k_load_".KPARA.".txt"
 set output OUTDIR.TOPO."_k_load_".KPARA.SUBFIX
 
 plot \
-FILE u 1:2 with linespoints pointtype 2 dt  1 lw 4 pointsize 2 title 'CountMax',\
-FILE u 1:3 with linespoints pointtype 4 dt 3 lw 4 pointsize 2 title 'FSS',\
-FILE u 1:4 with linespoints pointtype 6 dt 3 lw 4 pointsize 2 title 'CountSketch'
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 5.5 pointsize 2 title 'FSS',\
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 5.5 pointsize 2 title 'CountSketch',\
+FILE u 1:2 with linespoints pointtype 2 dt  1 lw 5.5 pointsize 2 title 'CountMax',\
 
 set key right bottom box
 
 set xrange[1000:3000]
-set xtics ("1" 1000, "2" 2000, "3" 3000)
+set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
 
 set xl 'Number of Flows ({/Symbol \264}10^3)'
 
@@ -34,6 +34,6 @@ FILE = "./".TOPO."_flow_load_".FPARA.".txt"
 set output OUTDIR.TOPO."_flow_load_".FPARA.SUBFIX
 
 plot \
-FILE u 1:2 with linespoints pointtype 2 dt  1 lw 4 pointsize 2 title 'CountMax',\
-FILE u 1:3 with linespoints pointtype 4 dt 3 lw 4 pointsize 2 title 'FSS',\
-FILE u 1:4 with linespoints pointtype 6 dt 3 lw 4 pointsize 2 title 'CountSketch'
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 5.5 pointsize 2 title 'FSS',\
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 5.5 pointsize 2 title 'CountSketch',\
+FILE u 1:2 with linespoints pointtype 2 dt  1 lw 5.5 pointsize 2 title 'CountMax',\
