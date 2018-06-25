@@ -15,15 +15,16 @@ using Switch = Simulation.Switch;
 namespace Simulator {
     using Tup = System.ValueTuple<double, double>;
     using ElemType = Int64;
+    using CountMaxSketch = Simulation.CountMaxSketch.Sketch;
 
     static partial class Program {
         internal static int[] k_list = {1000, 1500, 2000, 2500, 3000};
 
         internal static string[] topo_list =
         {
-            //"Fattree" ,
-            "Spine" ,
-             /*"HyperX",*/
+            "Fattree",
+            //"Spine" ,
+            /*"HyperX",*/
         };
 
         internal static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
@@ -32,19 +33,40 @@ namespace Simulator {
         //private static int[] count_list = {50000, 100000, 200000, 300000};
         internal static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
 
+        static void Test(__arglist) {
+            var iterator = new ArgIterator(__arglist);
+            var o = __refvalue(iterator.GetNextArg(), CountMax.SwitchSketch);
+            //Test(__arglist(o));
+
+            for (int x = 1; x < 8; x++) {
+                if (x > 5) {
+                    break; // x到6的时候会进入到这里
+                    //break了之后立刻跳出for外面-------
+                } //             |
+
+                Console.WriteLine(x); //这个被跳过了  |
+            } //             |
+
+            //   <------------------------------------
+        }
+
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
 #if DEBUG
             Debug.WriteLine("--DEBUG--");
 #endif
+            //HalfHalfTest();
             //Filter();
             //TTT();
             IEnumerable<Task> taskList = new List<Task>();
+            var test = new {Key = "test", Value = "test"};
+
             //taskList = taskList.Concat(FSSTesting());
             //SketchAppr();
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
-            taskList = taskList.Concat(SketchCompareAppr());
+            //taskList = taskList.Concat(SketchCompareAppr());
+            taskList = taskList.Concat(SketchCompare());
             //taskList = taskList.Concat(ConcurrentReroute());
             //taskList = taskList.Concat(Prototype());
             //PartialReroute();
@@ -56,7 +78,7 @@ namespace Simulator {
             //SketchCompareTime();
             var taskArray = taskList.ToArray();
             RunTask(taskArray);
-            RerouteEval();
+            //RerouteEval();
             Console.ReadLine();
         }
 
@@ -154,7 +176,7 @@ namespace Simulator {
             foreach (string topos in topo_list)
             foreach (var flow_count in count_list) {
                 if (k != 1000 && flow_count != 200000) continue;
-                TopoFactory topoF = () => Generator.Program.LeafSpineGen();
+                TopoFactory topoF = Generator.Program.TestTopoGen;
                 IFS cm = new FilteredSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
                 int k_sv = (int) (1.2 * k);
                 IFS sv = new FilteredSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
@@ -172,6 +194,107 @@ namespace Simulator {
             return taskList.ToArray();
         }
 
+        static Task[] SketchCompare() {
+            var taskList = new List<Task>();
+            var ft = Generator.Program.LeafSpineGen();
+            var flow_count = 200000;
+            var topos = "SpineNew";
+            //var k = 1000;
+            //var ths_list = new []{0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000 };
+            //var d_list = Enumerable.Range(1, 10);
+            //for (var _ths = 0; _ths <= 3000; _ths += 200)
+            foreach (int k in k_list) 
+            {
+                var d = 2;
+                //var _ths = 1000;
+                //foreach (int d in d_list) {
+
+                void _do(object obj) {
+                    var ths = 0;
+                    var topo = ft;
+                    var fin = $"{topos}_{flow_count}";
+                    var flowSet = LoadFlow(fin, topo);
+                    var cm = (IFS) obj;
+                    cm.Init(topo);
+                    foreach (Flow flow in flowSet) {
+                        cm.Update(flow, (ElemType) flow.Traffic);
+                    }
+
+                    var list_cm = new List<Tup>();
+                    foreach (Flow flow in flowSet) {
+                        var query_cm = cm.Query(flow);
+                        list_cm.Add((flow.Traffic, query_cm));
+                    }
+
+                    foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
+                        var ll_cm = RelativeErrorOfTop(list_cm, threshold);
+                        var count_cm = ll_cm.Count(d1 => d1 != 0);
+                        var t_cm = list_cm.Where(t => t.Item2 != 0).Sum(t => t.Item1);
+
+
+                        var total = list_cm.Sum(t => t.Item1);
+                        Console.WriteLine(
+                            $"\r{topos},{cm.GetType().Name}, {k}, {d}, {threshold},{ll_cm.Average()}                             ");
+                    }
+                }
+
+                //_do();
+
+                //_do();
+                var task = new Task(_do, new HalfSketch<CountMax.SwitchSketch>(2 * k, 2, 0, () => new CountMax.SwitchSketch(k, d)));
+                var task1 = new Task(_do, new EgressSketch<CountMax.SwitchSketch>(2 * k, 2, 0, () => new CountMax.SwitchSketch(k, d)));
+                taskList.Add(task);
+                taskList.Add(task1);
+            }
+
+
+            return taskList.ToArray();
+        }
+
+        static void HalfHalfTest() {
+            var flowSet = LoadFlow("Fattree_100000", Generator.Program.FatTreeGen());
+            CountMaxSketch s1 = new CountMaxSketch(2000, 2);
+            CountMaxSketch s2 = new CountMaxSketch(2000, 2);
+            CountMaxSketch s3 = new CountMaxSketch(2000, 4);
+            foreach (Flow flow in flowSet) {
+                if (flow.GetHashCode() % 2 == 0) {
+                    s1.Update(flow, (ElemType) flow.Traffic);
+                }
+                else {
+                    s2.Update(flow, (ElemType) flow.Traffic);
+                }
+
+                s3.Update(flow, (ElemType) flow.Traffic);
+            }
+
+            //data_cm.Close();
+            //
+            //
+            foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
+                var ll1 = RelativeError2(flowSet, threshold, s1, s2);
+                var ll3 = RelativeError2(flowSet, threshold, s3);
+                //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
+                Console.WriteLine(
+                    $"\r{threshold}, {ll1.Average()}, {ll3.Average()}                              ");
+            }
+        }
+
+        static List<double> RelativeError2(List<Flow> flowSet, double threshold, params ISketch<ElemType>[] sketch) {
+            flowSet.Sort((f1, f2) => (int) (f2.Traffic - f1.Traffic));
+            var top = flowSet.Take((int) (threshold * flowSet.Count));
+            var q = new List<double>();
+            foreach (Flow f in top) {
+                ElemType esti = 0;
+                foreach (var s in sketch) {
+                    var res = s.Query(f);
+                    if (res > esti) esti = res;
+                }
+
+                q.Add(Math.Abs((esti - f.Traffic) / f.Traffic));
+            }
+
+            return q;
+        }
 
         static Task[] SketchCompareAppr() {
             var taskList = new List<Task>();
@@ -276,6 +399,7 @@ namespace Simulator {
                         var query_fss = fss.Query(flow);
                         list_fss.Add((flow.Traffic, query_fss));
                     }
+
                     //data_cm.Close();
                     //
                     //
@@ -454,8 +578,6 @@ namespace Simulator {
             }
         }
 
-
-        
 
         private static List<double> RelativeErrorOfTop(IEnumerable<(double, double)> list, double threshold) {
             var list1 = list;

@@ -11,25 +11,6 @@ using System.Threading.Tasks;
 using ElemType = System.Int64;
 
 namespace Simulation {
-    public interface IReversibleSketch <TKey, TValue>:ITopoSketch<TKey,TValue> {
-        IEnumerable<TKey> GetAllKeys();
-    }
-
-    public interface ITopoSketch <in TKey, TValue> {
-        int W { get; }
-        void Update(TKey key, TValue value);
-        TValue Query(TKey key);
-        TValue this[TKey key] { get; }
-    }
-
-    public interface ISketch < TValue> {
-        void Update(object key, TValue value);
-
-        TValue Query(object key);
-        
-    }
-
-
 
     public class CountMin : ITopoSketch<Flow, ElemType> {
         //public Type ElementType = new ElemType().GetType();
@@ -66,6 +47,11 @@ namespace Simulation {
                 ElemType old = this.stat[index];
                 stat[index] += value;
                 return old;
+            }
+
+            public void Set(object key, ElemType value) {
+                int index = hash(key);
+                stat[index] = value;
             }
 
             public ElemType Query(object key) { return stat[hash(key)]; }
@@ -108,6 +94,12 @@ namespace Simulation {
                     result.Add(cmLine.Query(key));
                 }
                 return result.Min();
+            }
+
+            public void Set(object key, ElemType value) {
+                foreach (CMLine cmLine in this.stat) {
+                    cmLine.Set(key, value);
+                }
             }
         }
 

@@ -9,11 +9,7 @@ namespace Simulation {
 
     public delegate T SketchFactory <out T>() where T : ISketch<ElemType>;
 
-    public interface IFS : ITopoSketch<Flow, ElemType>  {
-        string SketchClassName { get; }
 
-        void Init(Topology topo);
-    }
 
     public class FilteredSketch <T> : IFS, ITopoSketch<Flow, ElemType> where T : class, ISketch<ElemType> {
         private int _threshold = 1000;
@@ -32,7 +28,6 @@ namespace Simulation {
             this.factoryMethod = factoryMethod;
             this.W = w;
             this.D = d;
-
         }
 
         public void Init(Topology topo) {
@@ -55,7 +50,8 @@ namespace Simulation {
                 t -= packet;
             }
         }
-
+        public HashSet<Flow> FilteredFlows = new HashSet<Flow>();
+        public int FilteredPackets = 0;
         private void _update(Flow flow, ElemType value) {
             bool large = false;
             foreach (Switch sw in flow) {
@@ -64,19 +60,30 @@ namespace Simulation {
                     //    this.filter.Add(sw, new CountMin.SwitchSketch(W, d));
                     //}
 
-                    var amount = this.filter[sw].PeekUpdate(flow, value);
+                    //var amount = this.filter[sw].PeekUpdate(flow, value);
+                    this.filter[sw].Update(flow, value);
 
-                    if (amount + value > this._threshold) {
-                        if (amount < this._threshold) {
-                            large = true;
-                            this.data[flow.OutgressSwitch].Update(flow, value + amount);
-                        }
-                        else {
+                    if (this.filter[sw].Query(flow)  > this._threshold) 
+                    {
+                        //if (amount < this._threshold) {
+                        //    large = true;
+                        //    this.data[flow.OutgressSwitch].Update(flow, value + amount);
+                        //}
+                        //else 
+                        {
                             large = true;
                             this.data[flow.OutgressSwitch].Update(flow, value);
+                            if (this.FilteredFlows.Contains(flow)) {
+                                this.FilteredFlows.Remove(flow);
+                            }
                         }
 
                         break;
+                    }
+                    //else 
+                    {
+                        this.FilteredFlows.Add(flow);
+                        ++this.FilteredPackets;
                     }
                 }
                 else if (large) {

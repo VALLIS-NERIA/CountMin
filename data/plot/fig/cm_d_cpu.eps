@@ -1,7 +1,7 @@
 %!PS-Adobe-2.0 EPSF-2.0
 %%Title: ./fig/cm_d_cpu.eps
-%%Creator: gnuplot 5.0 patchlevel 3
-%%CreationDate: Thu Feb  8 10:40:59 2018
+%%Creator: gnuplot 5.2 patchlevel 0
+%%CreationDate: Sun Jun 24 12:44:52 2018
 %%DocumentFonts: (atend)
 %%BoundingBox: 50 50 302 226
 %%EndComments
@@ -429,15 +429,27 @@ Level1 {Level1PatternFill} {Level2PatternFill} ifelse
 dup length dict begin {1 index /FID eq {pop pop} {def} ifelse} forall
 currentdict end definefont pop
 %
+/Metrics {ExtendTextBox Gswidth} def
+/Lwidth {currentpoint stroke M 0 vshift R Metrics} def
+/Rwidth {currentpoint stroke M dup stringwidth pop neg vshift R Metrics} def
+/Cwidth {currentpoint stroke M dup stringwidth pop -2 div vshift R Metrics} def
+/GLwidth {currentpoint stroke M 0 vshift R {ExtendTextBox} forall} def
+/GRwidth {currentpoint stroke M dup Gwidth vshift R {ExtendTextBox} forall} def
+/GCwidth {currentpoint stroke M dup Gwidth 2 div vshift R {ExtendTextBox} forall} def
+/GLwidth2 {0 Gwidth AddGlyphWidth} def
+/GRwidth2 {Gwidth -1 mul 0 AddGlyphWidth} def
+/GCwidth2 {Gwidth 2 div dup -1 mul AddGlyphWidth} def
+/AddGlyphWidth { dup TBx2 gt {userdict /TBx2 3 -1 roll put} {pop} ifelse
+                 dup TBx1 lt {userdict /TBx1 3 -1 roll put} {pop} ifelse } def
 /MFshow {
    { dup 5 get 3 ge
      { 5 get 3 eq {gsave} {grestore} ifelse }
      {dup dup 0 get findfont exch 1 get scalefont setfont
      [ currentpoint ] exch dup 2 get 0 exch R dup 5 get 2 ne {dup dup 6
-     get exch 4 get {textshow} {stringwidth pop 0 R} ifelse }if dup 5 get 0 eq
+     get exch 4 get {textshow} {Metrics pop 0 R} ifelse }if dup 5 get 0 eq
      {dup 3 get {2 get neg 0 exch R pop} {pop aload pop M} ifelse} {dup 5
-     get 1 eq {dup 2 get exch dup 3 get exch 6 get stringwidth pop -2 div
-     dup 0 R} {dup 6 get stringwidth pop -2 div 0 R 6 get
+     get 1 eq {dup 2 get exch dup 3 get exch 6 get Gswidth pop -2 div
+     dup 0 R} {dup 6 get Gswidth pop -2 div 0 R 6 get
      textshow 2 index {aload pop M neg 3 -1 roll neg R pop pop} {pop pop pop
      pop aload pop M} ifelse }ifelse }ifelse }
      ifelse }
@@ -466,42 +478,39 @@ systemdict /pdfmark known not {
 SDict begin [
   /Title (./fig/cm_d_cpu.eps)
   /Subject (gnuplot plot)
-  /Creator (gnuplot 5.0 patchlevel 3)
-  /Author (venn)
+  /Creator (gnuplot 5.2 patchlevel 0)
 %  /Producer (gnuplot)
 %  /Keywords ()
-  /CreationDate (Thu Feb  8 10:40:59 2018)
+  /CreationDate (Sun Jun 24 12:44:52 2018)
   /DOCINFO pdfmark
 end
 } ifelse
 %
-% Support for boxed text - Ethan A Merritt May 2005
+% Support for boxed text - Ethan A Merritt Sep 2016
 %
 /InitTextBox { userdict /TBy2 3 -1 roll put userdict /TBx2 3 -1 roll put
            userdict /TBy1 3 -1 roll put userdict /TBx1 3 -1 roll put
 	   /Boxing true def } def
-/ExtendTextBox { Boxing
-    { gsave dup false charpath pathbbox
+/ExtendTextBox { dup type /stringtype eq
+    { Boxing { gsave dup false charpath pathbbox
       dup TBy2 gt {userdict /TBy2 3 -1 roll put} {pop} ifelse
       dup TBx2 gt {userdict /TBx2 3 -1 roll put} {pop} ifelse
       dup TBy1 lt {userdict /TBy1 3 -1 roll put} {pop} ifelse
       dup TBx1 lt {userdict /TBx1 3 -1 roll put} {pop} ifelse
-      grestore } if } def
+      grestore } if }
+    {} ifelse} def
 /PopTextBox { newpath TBx1 TBxmargin sub TBy1 TBymargin sub M
                TBx1 TBxmargin sub TBy2 TBymargin add L
 	       TBx2 TBxmargin add TBy2 TBymargin add L
 	       TBx2 TBxmargin add TBy1 TBymargin sub L closepath } def
 /DrawTextBox { PopTextBox stroke /Boxing false def} def
-/FillTextBox { gsave PopTextBox 1 1 1 setrgbcolor fill grestore /Boxing false def} def
+/FillTextBox { gsave PopTextBox fill grestore /Boxing false def} def
 0 0 0 0 InitTextBox
 /TBxmargin 20 def
 /TBymargin 20 def
 /Boxing false def
 /textshow { ExtendTextBox Gshow } def
 %
-% redundant definitions for compatibility with prologue.ps older than 5.0.2
-/LTB {BL [] LCb DL} def
-/LTb {PL [] LCb DL} def
 end
 %%EndProlog
 %%Page: 1 1
@@ -528,101 +537,156 @@ stroke
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 1217 M
+1032 1398 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 1217 M
+888 1398 M
 [ [(Times) 240.0 0.0 true true 0 (100)]
 ] -80.0 MRshow
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 1667 M
+1032 2028 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 1667 M
+888 2028 M
 [ [(Times) 240.0 0.0 true true 0 (200)]
 ] -80.0 MRshow
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 2116 M
+1032 2657 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 2116 M
+888 2657 M
 [ [(Times) 240.0 0.0 true true 0 (300)]
 ] -80.0 MRshow
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 2565 M
+1032 3287 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 2565 M
+888 3287 M
 [ [(Times) 240.0 0.0 true true 0 (400)]
-] -80.0 MRshow
-1.000 UL
-LTb
-LCb setrgbcolor
-1032 3014 M
-63 0 V
-3800 0 R
--63 0 V
-stroke
-888 3014 M
-[ [(Times) 240.0 0.0 true true 0 (500)]
 ] -80.0 MRshow
 1.000 UL
 LTb
 LCb setrgbcolor
 1032 768 M
 0 63 V
-0 2408 R
+0 2456 R
 0 -63 V
 stroke
 1032 528 M
-[ [(Times) 240.0 0.0 true true 0 (1)]
+[ [(Times) 240.0 0.0 true true 0 ( 1)]
 ] -80.0 MCshow
 1.000 UL
 LTb
 LCb setrgbcolor
-2136 768 M
+1461 768 M
 0 63 V
-0 2408 R
+0 2456 R
 0 -63 V
 stroke
-2136 528 M
-[ [(Times) 240.0 0.0 true true 0 (5)]
+1461 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 2)]
 ] -80.0 MCshow
 1.000 UL
 LTb
 LCb setrgbcolor
-3515 768 M
+1890 768 M
 0 63 V
-0 2408 R
+0 2456 R
 0 -63 V
 stroke
-3515 528 M
-[ [(Times) 240.0 0.0 true true 0 (10)]
+1890 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 3)]
+] -80.0 MCshow
+1.000 UL
+LTb
+LCb setrgbcolor
+2320 768 M
+0 63 V
+0 2456 R
+0 -63 V
+stroke
+2320 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 4)]
+] -80.0 MCshow
+1.000 UL
+LTb
+LCb setrgbcolor
+2749 768 M
+0 63 V
+0 2456 R
+0 -63 V
+stroke
+2749 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 5)]
+] -80.0 MCshow
+1.000 UL
+LTb
+LCb setrgbcolor
+3178 768 M
+0 63 V
+0 2456 R
+0 -63 V
+stroke
+3178 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 6)]
+] -80.0 MCshow
+1.000 UL
+LTb
+LCb setrgbcolor
+3607 768 M
+0 63 V
+0 2456 R
+0 -63 V
+stroke
+3607 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 7)]
+] -80.0 MCshow
+1.000 UL
+LTb
+LCb setrgbcolor
+4037 768 M
+0 63 V
+0 2456 R
+0 -63 V
+stroke
+4037 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 8)]
+] -80.0 MCshow
+1.000 UL
+LTb
+LCb setrgbcolor
+4466 768 M
+0 63 V
+0 2456 R
+0 -63 V
+stroke
+4466 528 M
+[ [(Times) 240.0 0.0 true true 0 ( 9)]
 ] -80.0 MCshow
 1.000 UL
 LTb
 LCb setrgbcolor
 4895 768 M
 0 63 V
-0 2408 R
+0 2456 R
 0 -63 V
 stroke
 4895 528 M
-[ [(Times) 240.0 0.0 true true 0 (15)]
+[ [(Times) 240.0 0.0 true true 0 ( 10)]
 ] -80.0 MCshow
 1.000 UL
 LTb
@@ -630,10 +694,10 @@ LCb setrgbcolor
 1.000 UL
 LTB
 LCb setrgbcolor
-1032 3239 N
-0 -2471 V
+1032 3287 N
+0 -2519 V
 3863 0 V
-0 2471 V
+0 2519 V
 -3863 0 V
 Z stroke
 1.000 UP
@@ -641,7 +705,7 @@ Z stroke
 LTb
 LCb setrgbcolor
 LCb setrgbcolor
-192 2003 M
+216 2027 M
 currentpoint gsave translate -270 rotate 0 0 moveto
 [ [(Times) 240.0 0.0 true true 0 (CPU Cycle per Packet)]
 ] -80.0 MCshow
@@ -655,7 +719,7 @@ LTb
 1.000 UL
 LTb
 LCb setrgbcolor
-2708 997 N
+2840 831 N
 0 220 V
 1911 0 V
 0 -220 V
@@ -668,7 +732,7 @@ LTb
 LT1
 LCb setrgbcolor
 LCb setrgbcolor
-3764 1107 M
+3896 941 M
 [ [(Times) 220.0 0.0 true true 0 (CountMax)]
 ] -73.3 MRshow
 2.000 UP
@@ -676,39 +740,29 @@ LCb setrgbcolor
 LTb
 LT1
 LCb setrgbcolor
-3896 1107 M
+4028 941 M
 591 0 V
-1032 947 M
-276 105 V
-276 114 V
-276 122 V
-276 175 V
-276 171 V
-276 137 V
-276 204 V
-275 128 V
-276 195 V
-276 157 V
-276 122 V
-276 163 V
-276 180 V
-276 104 V
-1032 947 Box
-1308 1052 Box
-1584 1166 Box
-1860 1288 Box
-2136 1463 Box
-2412 1634 Box
-2688 1771 Box
-2964 1975 Box
-3239 2103 Box
-3515 2298 Box
-3791 2455 Box
-4067 2577 Box
-4343 2740 Box
-4619 2920 Box
-4895 3024 Box
-4191 1107 Box
+-3587 78 R
+429 148 V
+429 159 V
+430 170 V
+429 247 V
+429 239 V
+429 192 V
+430 286 V
+429 179 V
+429 273 V
+1032 1019 Box
+1461 1167 Box
+1890 1326 Box
+2320 1496 Box
+2749 1743 Box
+3178 1982 Box
+3607 2174 Box
+4037 2460 Box
+4466 2639 Box
+4895 2912 Box
+4323 941 Box
 % End plot #1
 2.000 UL
 LTb
@@ -716,10 +770,10 @@ LCb setrgbcolor
 1.000 UL
 LTB
 LCb setrgbcolor
-1032 3239 N
-0 -2471 V
+1032 3287 N
+0 -2519 V
 3863 0 V
-0 2471 V
+0 2519 V
 -3863 0 V
 Z stroke
 1.000 UP

@@ -119,11 +119,11 @@ namespace Simulation {
                     this.table[i][j] = this.table[i][k] + this.table[k][j];
                 }
 
-                //else if (ij.Length == ik.Length + kj.Length) {
-                //    if (rnd.NextDouble() < 0.1) {
-                //        this.table[i][j] = this.table[i][k] + this.table[k][j];
-                //    }
-                //}
+                else if (ij.Length == ik.Length + kj.Length) {
+                    if (rnd.NextDouble() < 0.1) {
+                        this.table[i][j] = this.table[i][k] + this.table[k][j];
+                    }
+                }
             }
                 
             

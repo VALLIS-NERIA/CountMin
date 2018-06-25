@@ -24,15 +24,17 @@ namespace Generator {
 
         //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
         private static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
-
+        //private static int[] count_list = {1000, 2000, 3000};
 
         static void NewGen(Topology topo, string topoName) {
             var floyd = new Floyd(topo).Calc();
             var taskList = new List<Task>();
-            foreach (int count in count_list) {
+            for (int index = 0; index < count_list.Length; index++) {
+                int count = count_list[index];
                 var refSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText($"UDP fattree.json"));
 
                 void _do() {
+                    //++count;
                     //var traffics = (from f in refSet.flows select f.traffic * (300000d / count)).ToArray();
                     var refTraffics = (from f in refSet.flows orderby f.traffic descending select f.traffic).ToArray();
                     var traffics = new int[count];
@@ -52,19 +54,26 @@ namespace Generator {
 
                     //Zipf.Samples(traffics, 1, count);
                     var edges = topo.Switches.Where(sw => sw.IsEdge).ToList();
+                    var insides = topo.Switches.Where(sw => !sw.IsEdge).ToList();
                     var len = edges.Count;
                     var flowSet = new List<Flow>();
                     var flowCount = traffics.Length;
-                    while (flowCount-- > 0) {
+                    while (flowCount-- > 1) {
                         //var src = edges[rnd.Next() % len];
                         //var dst = edges[rnd.Next() % len];
+
                         var src = edges.GetRandom();
                         var dst = edges.GetRandom();
                         while (dst == src) {
                             dst = edges.GetRandom();
                         }
 
-                        flowSet.Add(new Flow(floyd[src][dst], (long) (traffics[flowCount])));
+                        if (topoName.Contains("Spine")) {
+                            flowSet.Add(new Flow(new Simulation.Path {src, insides.GetRandom(), dst}, (long) (traffics[flowCount])));
+                        }
+                        else {
+                            flowSet.Add(new Flow(floyd[src][dst], (long) (traffics[flowCount])));
+                        }
                     }
 
                     var fj = flowSet.ToCoflowJson(topo);
@@ -94,8 +103,8 @@ namespace Generator {
             //InitGen();
             var ft = FatTreeGen(8);
             var sp = LeafSpineGen();
-
-            NewGen(sp, "Spine");
+            var proto = TestTopoGen();
+            NewGen(sp, "SpineNew");
             //NewGen(ft, "Fattree");
             //NewGen(hy, "HyperX");
             foreach (int count in count_list) {
@@ -177,25 +186,7 @@ namespace Generator {
             }
         }
 
-        static Topology TestTopoGen() {
-            var topo = new Topology();
-            var switches = new List<Switch>();
-            for (int i = 0; i < 8; i++) {
-                switches.Add(new Switch($"{i}"));
-            }
-
-            for (int i = 1; i < 4; i++) {
-                switches[i].Link(switches[i + 4]);
-            }
-
-            for (int i = 1; i < 4; i++) {
-                switches[0].Link(switches[i]);
-                switches[4].Link(switches[i + 4]);
-            }
-
-            topo.Switches = switches;
-            return topo;
-        }
+        public static Topology TestTopoGen() { return LeafSpineGen(2); }
 
         static void M___ain(string[] args) {
             Directory.SetCurrentDirectory(@"..\..\..\data");
@@ -345,7 +336,7 @@ namespace Generator {
             public IEnumerable<Switch> GetSwitches() { return Aggr.Concat(Edge); }
         }
 
-        public static Topology FatTreeGen(int K) {
+        public static Topology FatTreeGen(int K = 8) {
             if (K % 2 != 0) throw new ArgumentException();
             var n = K / 2;
             var topo = new Topology();

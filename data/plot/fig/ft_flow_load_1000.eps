@@ -1,7 +1,7 @@
 %!PS-Adobe-2.0 EPSF-2.0
 %%Title: ./fig/ft_flow_load_1000.eps
-%%Creator: gnuplot 5.0 patchlevel 3
-%%CreationDate: Thu Feb  8 10:40:58 2018
+%%Creator: gnuplot 5.2 patchlevel 0
+%%CreationDate: Sun Jun 24 12:44:52 2018
 %%DocumentFonts: (atend)
 %%BoundingBox: 50 50 302 226
 %%EndComments
@@ -429,15 +429,27 @@ Level1 {Level1PatternFill} {Level2PatternFill} ifelse
 dup length dict begin {1 index /FID eq {pop pop} {def} ifelse} forall
 currentdict end definefont pop
 %
+/Metrics {ExtendTextBox Gswidth} def
+/Lwidth {currentpoint stroke M 0 vshift R Metrics} def
+/Rwidth {currentpoint stroke M dup stringwidth pop neg vshift R Metrics} def
+/Cwidth {currentpoint stroke M dup stringwidth pop -2 div vshift R Metrics} def
+/GLwidth {currentpoint stroke M 0 vshift R {ExtendTextBox} forall} def
+/GRwidth {currentpoint stroke M dup Gwidth vshift R {ExtendTextBox} forall} def
+/GCwidth {currentpoint stroke M dup Gwidth 2 div vshift R {ExtendTextBox} forall} def
+/GLwidth2 {0 Gwidth AddGlyphWidth} def
+/GRwidth2 {Gwidth -1 mul 0 AddGlyphWidth} def
+/GCwidth2 {Gwidth 2 div dup -1 mul AddGlyphWidth} def
+/AddGlyphWidth { dup TBx2 gt {userdict /TBx2 3 -1 roll put} {pop} ifelse
+                 dup TBx1 lt {userdict /TBx1 3 -1 roll put} {pop} ifelse } def
 /MFshow {
    { dup 5 get 3 ge
      { 5 get 3 eq {gsave} {grestore} ifelse }
      {dup dup 0 get findfont exch 1 get scalefont setfont
      [ currentpoint ] exch dup 2 get 0 exch R dup 5 get 2 ne {dup dup 6
-     get exch 4 get {textshow} {stringwidth pop 0 R} ifelse }if dup 5 get 0 eq
+     get exch 4 get {textshow} {Metrics pop 0 R} ifelse }if dup 5 get 0 eq
      {dup 3 get {2 get neg 0 exch R pop} {pop aload pop M} ifelse} {dup 5
-     get 1 eq {dup 2 get exch dup 3 get exch 6 get stringwidth pop -2 div
-     dup 0 R} {dup 6 get stringwidth pop -2 div 0 R 6 get
+     get 1 eq {dup 2 get exch dup 3 get exch 6 get Gswidth pop -2 div
+     dup 0 R} {dup 6 get Gswidth pop -2 div 0 R 6 get
      textshow 2 index {aload pop M neg 3 -1 roll neg R pop pop} {pop pop pop
      pop aload pop M} ifelse }ifelse }ifelse }
      ifelse }
@@ -466,42 +478,39 @@ systemdict /pdfmark known not {
 SDict begin [
   /Title (./fig/ft_flow_load_1000.eps)
   /Subject (gnuplot plot)
-  /Creator (gnuplot 5.0 patchlevel 3)
-  /Author (venn)
+  /Creator (gnuplot 5.2 patchlevel 0)
 %  /Producer (gnuplot)
 %  /Keywords ()
-  /CreationDate (Thu Feb  8 10:40:58 2018)
+  /CreationDate (Sun Jun 24 12:44:52 2018)
   /DOCINFO pdfmark
 end
 } ifelse
 %
-% Support for boxed text - Ethan A Merritt May 2005
+% Support for boxed text - Ethan A Merritt Sep 2016
 %
 /InitTextBox { userdict /TBy2 3 -1 roll put userdict /TBx2 3 -1 roll put
            userdict /TBy1 3 -1 roll put userdict /TBx1 3 -1 roll put
 	   /Boxing true def } def
-/ExtendTextBox { Boxing
-    { gsave dup false charpath pathbbox
+/ExtendTextBox { dup type /stringtype eq
+    { Boxing { gsave dup false charpath pathbbox
       dup TBy2 gt {userdict /TBy2 3 -1 roll put} {pop} ifelse
       dup TBx2 gt {userdict /TBx2 3 -1 roll put} {pop} ifelse
       dup TBy1 lt {userdict /TBy1 3 -1 roll put} {pop} ifelse
       dup TBx1 lt {userdict /TBx1 3 -1 roll put} {pop} ifelse
-      grestore } if } def
+      grestore } if }
+    {} ifelse} def
 /PopTextBox { newpath TBx1 TBxmargin sub TBy1 TBymargin sub M
                TBx1 TBxmargin sub TBy2 TBymargin add L
 	       TBx2 TBxmargin add TBy2 TBymargin add L
 	       TBx2 TBxmargin add TBy1 TBymargin sub L closepath } def
 /DrawTextBox { PopTextBox stroke /Boxing false def} def
-/FillTextBox { gsave PopTextBox 1 1 1 setrgbcolor fill grestore /Boxing false def} def
+/FillTextBox { gsave PopTextBox fill grestore /Boxing false def} def
 0 0 0 0 InitTextBox
 /TBxmargin 20 def
 /TBymargin 20 def
 /Boxing false def
 /textshow { ExtendTextBox Gshow } def
 %
-% redundant definitions for compatibility with prologue.ps older than 5.0.2
-/LTB {BL [] LCb DL} def
-/LTb {PL [] LCb DL} def
 end
 %%EndProlog
 %%Page: 1 1
@@ -528,45 +537,45 @@ stroke
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 1504 M
+1032 1514 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 1504 M
+888 1514 M
 [ [(Times) 240.0 0.0 true true 0 (0.2)]
 ] -80.0 MRshow
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 2000 M
+1032 2021 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 2000 M
+888 2021 M
 [ [(Times) 240.0 0.0 true true 0 (0.4)]
 ] -80.0 MRshow
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 2495 M
+1032 2527 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 2495 M
+888 2527 M
 [ [(Times) 240.0 0.0 true true 0 (0.6)]
 ] -80.0 MRshow
 1.000 UL
 LTb
 LCb setrgbcolor
-1032 2991 M
+1032 3034 M
 63 0 V
 3800 0 R
 -63 0 V
 stroke
-888 2991 M
+888 3034 M
 [ [(Times) 240.0 0.0 true true 0 (0.8)]
 ] -80.0 MRshow
 1.000 UL
@@ -574,7 +583,7 @@ LTb
 LCb setrgbcolor
 1032 1008 M
 0 63 V
-0 2168 R
+0 2216 R
 0 -63 V
 stroke
 1032 768 M
@@ -585,7 +594,7 @@ LTb
 LCb setrgbcolor
 1805 1008 M
 0 63 V
-0 2168 R
+0 2216 R
 0 -63 V
 stroke
 1805 768 M
@@ -596,7 +605,7 @@ LTb
 LCb setrgbcolor
 2577 1008 M
 0 63 V
-0 2168 R
+0 2216 R
 0 -63 V
 stroke
 2577 768 M
@@ -607,7 +616,7 @@ LTb
 LCb setrgbcolor
 3350 1008 M
 0 63 V
-0 2168 R
+0 2216 R
 0 -63 V
 stroke
 3350 768 M
@@ -618,7 +627,7 @@ LTb
 LCb setrgbcolor
 4122 1008 M
 0 63 V
-0 2168 R
+0 2216 R
 0 -63 V
 stroke
 4122 768 M
@@ -629,7 +638,7 @@ LTb
 LCb setrgbcolor
 4895 1008 M
 0 63 V
-0 2168 R
+0 2216 R
 0 -63 V
 stroke
 4895 768 M
@@ -641,10 +650,10 @@ LCb setrgbcolor
 1.000 UL
 LTB
 LCb setrgbcolor
-1032 3239 N
-0 -2231 V
+1032 3287 N
+0 -2279 V
 3863 0 V
-0 2231 V
+0 2279 V
 -3863 0 V
 Z stroke
 1.000 UP
@@ -652,7 +661,7 @@ Z stroke
 LTb
 LCb setrgbcolor
 LCb setrgbcolor
-192 2123 M
+216 2147 M
 currentpoint gsave translate -270 rotate 0 0 moveto
 [ [(Times) 240.0 0.0 true true 0 (Max. Link Load Ratio)]
 ] -80.0 MCshow
@@ -693,18 +702,18 @@ LT2
 LCb setrgbcolor
 4028 1621 M
 591 0 V
--3587 83 R
-773 294 V
-772 215 V
-773 275 V
-772 91 V
-773 239 V
-1032 1704 Circle
-1805 1998 Circle
-2577 2213 Circle
-3350 2488 Circle
-4122 2579 Circle
-4895 2818 Circle
+-3587 98 R
+773 300 V
+772 220 V
+773 281 V
+772 93 V
+773 244 V
+1032 1719 Circle
+1805 2019 Circle
+2577 2239 Circle
+3350 2520 Circle
+4122 2613 Circle
+4895 2857 Circle
 4323 1621 Circle
 % End plot #1
 % Begin plot #2
@@ -724,18 +733,18 @@ LT2
 LCb setrgbcolor
 4028 1401 M
 591 0 V
-1032 1781 M
-773 196 V
-772 173 V
-773 302 V
-772 209 V
-773 62 V
-1032 1781 Box
-1805 1977 Box
-2577 2150 Box
-3350 2452 Box
-4122 2661 Box
-4895 2723 Box
+1032 1798 M
+773 200 V
+772 176 V
+773 309 V
+772 213 V
+773 64 V
+1032 1798 Box
+1805 1998 Box
+2577 2174 Box
+3350 2483 Box
+4122 2696 Box
+4895 2760 Box
 4323 1401 Box
 % End plot #2
 % Begin plot #3
@@ -753,18 +762,18 @@ LTb
 LCb setrgbcolor
 4028 1181 M
 591 0 V
-1032 1522 M
-773 192 V
-772 137 V
-773 221 V
+1032 1533 M
+773 196 V
+772 140 V
+773 226 V
 772 15 V
-773 291 V
-1032 1522 Crs
-1805 1714 Crs
-2577 1851 Crs
-3350 2072 Crs
-4122 2087 Crs
-4895 2378 Crs
+773 297 V
+1032 1533 Crs
+1805 1729 Crs
+2577 1869 Crs
+3350 2095 Crs
+4122 2110 Crs
+4895 2407 Crs
 4323 1181 Crs
 % End plot #3
 2.000 UL
@@ -773,10 +782,10 @@ LCb setrgbcolor
 1.000 UL
 LTB
 LCb setrgbcolor
-1032 3239 N
-0 -2231 V
+1032 3287 N
+0 -2279 V
 3863 0 V
-0 2231 V
+0 2279 V
 -3863 0 V
 Z stroke
 1.000 UP

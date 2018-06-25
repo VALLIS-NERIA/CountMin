@@ -11,7 +11,7 @@ namespace Simulation {
     public static class Utils {
         public static T GetRandom <T>(this IEnumerable<T> list) {
             var enumerable = list.ToList();
-            return enumerable.ElementAt(Binomial.Sample(0.5, enumerable.Count()));
+            return enumerable.ElementAt(Binomial.Sample(0.5, enumerable.Count-1));
         }
 
         public static void RunTask(Task[] taskArray, int count=3) {

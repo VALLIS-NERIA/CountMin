@@ -106,6 +106,8 @@ namespace Simulation.CountMaxSketch {
 
             return new HashSet<T>(list);
         }
+
+
     }
 }
 
@@ -218,6 +220,8 @@ namespace Simulation {
 
         public class SwitchSketch : CountMaxSketch.Sketch {
             public SwitchSketch(int _w, int _d) : base(_w, _d) { }
+
+
         }
 
         private Dictionary<Switch, SwitchSketch> data;
