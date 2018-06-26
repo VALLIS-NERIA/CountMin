@@ -14,7 +14,7 @@ namespace Simulation {
             return enumerable.ElementAt(Binomial.Sample(0.5, enumerable.Count-1));
         }
 
-        public static void RunTask(Task[] taskArray, int count=3) {
+        public static void RunTask(Task[] taskArray, int count=3, bool pause = true) {
             var begin = DateTime.Now;
             int i = 0;
             int countOld = 0;
@@ -41,20 +41,26 @@ namespace Simulation {
                 Thread.Sleep((int) (wait * 1000));
             }
             Task.WaitAll(taskArray);
-            Console.WriteLine("\nPress Q to exit.");
-            while (true) {
-                var c = Console.ReadKey();
-                if (c.Key == ConsoleKey.Q) {
-                    return;
-                    //Environment.Exit(0);
+            if (pause) {
+                Console.WriteLine("\nPress Q to exit.");
+                while (true) {
+                    var c = Console.ReadKey();
+                    if (c.Key == ConsoleKey.Q) {
+                        return;
+                        //Environment.Exit(0);
+                    }
                 }
+            }
+            else {
+                Console.WriteLine();
+                Console.WriteLine();
             }
         }
 
         public static Flow ReRoute(Flow flow, RoutingAlgorithm algo) {
             var src = flow.IngressSwitch;
             var dst = flow.OutgressSwitch;
-            return new Flow(algo(src, dst)) {Traffic = flow.Traffic};
+            return new Flow(algo(flow)) {Traffic = flow.Traffic};
         }
 
         public static int Counter = 0;
@@ -74,7 +80,7 @@ namespace Simulation {
                     }
                     var src = flow.IngressSwitch;
                     var dst = flow.OutgressSwitch;
-                    flow.OverrideAssign(algo(src, dst));
+                    flow.OverrideAssign(algo(flow));
                     CounterRerouted++;
                 }
             }
@@ -88,7 +94,7 @@ namespace Simulation {
                     }
                     var src = flow.IngressSwitch;
                     var dst = flow.OutgressSwitch;
-                    flow.OverrideAssign(algo(src, dst));
+                    flow.OverrideAssign(algo(flow));
                     if (++i > count) {
                         break;
                     }

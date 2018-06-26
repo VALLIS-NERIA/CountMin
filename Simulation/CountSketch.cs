@@ -35,7 +35,7 @@ namespace Simulation {
             private HashFunc hashFactory(int seed) { return o => (uint) ((uint) (o.GetHashCode() ^ seed) % this.w); }
 
             private SHashFunc sHashFactory(int seed) {
-                return o =>
+                return delegate(object o)
                 {
                     var h = o.GetHashCode();
                     var m = 0;
@@ -60,10 +60,9 @@ namespace Simulation {
                 int sign = this.sHash(key);
                 return this.Count[index] * sign;
             }
-
         }
 
-        public class SwitchSketch:ISketch<ElemType> {
+        public class SwitchSketch : ISketch<ElemType> {
             private CSLine[] stat;
             private int w, d;
 
@@ -75,7 +74,7 @@ namespace Simulation {
                 this.stat = new CSLine[d];
                 this.heap = new MinHeap<object, long>();
                 for (int i = 0; i < d; i++) {
-                    stat[i]=(new CSLine(w));
+                    stat[i] = (new CSLine(w));
                 }
             }
 
@@ -124,8 +123,13 @@ namespace Simulation {
                 }
                 var result = new List<ElemType>();
                 foreach (CSLine cmLine in stat) {
-                    result.Add(cmLine.Query(key));
+                    var q = cmLine.Query(key);
+                    if (q > 0)
+                        result.Add(cmLine.Query(key));
                 }
+
+                if (result.Count == 0) return 0;
+
                 result.Sort();
                 var len = result.Count;
                 if (len % 2 == 0) {
@@ -167,7 +171,7 @@ namespace Simulation {
         public CountSketch(int _w, int _d) {
             this.W = _w;
             this.d = _d;
-            this.data=new Dictionary<Switch, SwitchSketch>();
+            this.data = new Dictionary<Switch, SwitchSketch>();
         }
 
         public void Update(Flow flow, ElemType value) {

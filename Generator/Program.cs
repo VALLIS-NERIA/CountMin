@@ -58,7 +58,7 @@ namespace Generator {
                     var len = edges.Count;
                     var flowSet = new List<Flow>();
                     var flowCount = traffics.Length;
-                    while (flowCount-- > 1) {
+                    while (flowCount-- > 0) {
                         //var src = edges[rnd.Next() % len];
                         //var dst = edges[rnd.Next() % len];
 
@@ -243,22 +243,22 @@ namespace Generator {
             }
         }
 
-        static Flow GenerateRoute(Topology topo, RoutingAlgorithm algo, double traffic) {
-            var src = topo.RandomSwitch();
-            var dst = topo.RandomSwitch();
-            while (dst == src) {
-                dst = topo.RandomSwitch();
-            }
+        //static Flow GenerateRoute(Topology topo, RoutingAlgorithm algo, double traffic) {
+        //    var src = topo.RandomSwitch();
+        //    var dst = topo.RandomSwitch();
+        //    while (dst == src) {
+        //        dst = topo.RandomSwitch();
+        //    }
 
-            List<Switch> route = algo(src, dst);
-            if (route == null) {
-                return null;
-            }
+        //    List<Switch> route = algo(src, dst);
+        //    if (route == null) {
+        //        return null;
+        //    }
 
-            Flow f = new Flow(route);
-            f.Traffic = traffic;
-            return f;
-        }
+        //    Flow f = new Flow(route);
+        //    f.Traffic = traffic;
+        //    return f;
+        //}
 
         static Flow RandomFlow(Topology topo, int length, double traffic) {
             var f = new List<Switch>();

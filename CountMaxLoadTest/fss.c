@@ -60,7 +60,7 @@ int heap_count_2 = 0;
 
 void fss_sketch_update(struct fss_sketch* this, struct flow_key key, elemtype value) {
     elemtype min = hash_heap_peek(this->heap);
-    elemtype u = this->heap->size < this->heap->max_size ? 0:min;
+    elemtype u = this->heap->size < this->heap->max_size ? 0 : min;
     size_t index = ((uint32_t)flow_key_hash_old(key) ^ this->mask) % this->w;
     if (this->hash_counters[index] != 0) {
         ht_value v_;

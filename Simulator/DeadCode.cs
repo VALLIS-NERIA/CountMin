@@ -21,6 +21,58 @@ namespace Simulator {
     using ElemType = Int64;
 
     static partial class Program {
+        static void TTT() {
+            var topo = global::Generator.Program.FatTreeGen(8);
+            foreach (int count in count_list) {
+                var flowSet = LoadFlow($"Fattree_{count}", topo);
+                var traffics = from f in flowSet select f.Traffic;
+                var total = traffics.Sum();
+                var hhs = from t in traffics where t > (double) total / 10000d select t;
+                Console.WriteLine($"{total}, {total / 10000}, {hhs.Count()}");
+            }
+        }
+
+
+        static void Filter() {
+            var topo = global::Generator.Program.FatTreeGen(8);
+            var flowSet = LoadFlow("UDP fattree.json", topo);
+            int w = 1000;
+            int d = 2;
+            int count = 5;
+            while (count-- > 0) {
+                var fcm = new FilteredCountMax(w, d, topo);
+                var cm = new CountMax(w, d);
+                cm.Init(topo);
+                var t00 = DateTime.Now;
+                foreach (Flow flow in flowSet) {
+                    fcm.Update(flow, (ElemType) flow.Traffic);
+                }
+
+                var t = DateTime.Now;
+                foreach (Flow flow in flowSet) {
+                    cm.Update(flow, (ElemType) flow.Traffic);
+                }
+
+                var t11 = DateTime.Now;
+
+                var lf = new List<Tup>();
+                var l = new List<Tup>();
+                foreach (Flow flow in flowSet) {
+                    var qfcm = fcm.Query(flow);
+                    var qcm = cm.Query(flow);
+                    lf.Add((flow.Traffic, qfcm));
+                    l.Add((flow.Traffic, qcm));
+                }
+
+                foreach (var threshold in new[] {0.001}.Reverse()) {
+                    var llf = RelativeErrorOfTop(lf, threshold);
+                    var ll = RelativeErrorOfTop(l, threshold);
+
+                    Console.WriteLine($"\r{w}, {d}, {threshold},{llf.Average()}, {ll.Average()}, {(t - t00).TotalMilliseconds},{(t11 - t).TotalMilliseconds}");
+                }
+            }
+        }
+
         private static Task[] BenchMark(string name = "SketchVisor", bool head = true) {
             if (head) {
                 Console.WriteLine($"{"sketch",15}{"topology",10}{"flow_count",10}{"k",10}{"max",15},{"avg.",15}{"delta",15}");

@@ -83,7 +83,7 @@ namespace Simulation {
         public Path() : base() { }
     }
 
-    public delegate Path RoutingAlgorithm(Switch src, Switch dst);
+    public delegate Path RoutingAlgorithm(Flow flow);
 
     public class Floyd {
         private Dictionary<Switch, Dictionary<Switch, Path>> table;
@@ -150,6 +150,7 @@ namespace Simulation {
         private static Dictionary<(Switch src, Switch dst), Path> known = new Dictionary<(Switch src, Switch dst), Path>();
 
         public static Path FindPath(Switch src, Switch dst) { return FindPath(src, dst, null); }
+        public static Path FindPath(Flow flow) { return FindPath(flow.IngressSwitch, flow.OutgressSwitch); }
 
         public static Path FindPath(Switch src, Switch dst, Memo memo, int maxLength = 15) {
             // begin
@@ -197,6 +198,26 @@ namespace Simulation {
 
 
     public static class GreedySpine {
+        public static Path FindPath(Flow flow) {
+            var path = new Path(flow.Nodes);
+            if (path.MaxLoad == 0) {
+                return path;
+            }
+
+            double min = double.MaxValue;
+            var ret = new Path();
+
+            for (int i = 0; i < flow.IngressSwitch.Topology.Switches.Count / 3; ++i) {
+                var aggr = flow.IngressSwitch.Topology.Switches[i];
+                path[1] = aggr;
+                if (path.MaxLoad < min) {
+                    ret = new Path(path);
+                }
+            }
+
+            return ret;
+        }
+
         public static Path FindPath(Switch src, Switch dst) {
             var path = src.Topology.Floyd[src][dst];
             if (path.MaxLoad == 0) {
@@ -218,6 +239,7 @@ namespace Simulation {
     }
 
     public static class Greedy {
+
         public static double GetMaxLoad(this IEnumerable<Switch> path) {
             double load = 0;
             using (var iter = path.GetEnumerator()) {

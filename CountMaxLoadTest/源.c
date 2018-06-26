@@ -135,7 +135,7 @@ public:
 #include "fss.c"
 #include "countmax.h"
 #endif
-const long count = 100000;
+const long count = 120000;
 const int work_round = 5;
 const struct flow_key* flows;
 const elemtype* traffics;
@@ -171,7 +171,10 @@ elemtype* traffic_gen(size_t size) {
 #ifndef __cplusplus
 int fss_cpu = 0;
 int cs_cpu = 0;
-int cm_cpu = 0;
+int cm_cpu = 0; 
+double fss_time = 0;
+double cs_time = 0;
+double cm_time = 0;
 static void do_work_3(const int w) {
     heap_count_1 = 0;
     heap_count_2 = 0;
@@ -195,6 +198,7 @@ static void do_work_3(const int w) {
     }
     QueryPerformanceCounter(&end);
     cm_cpu += (int)((double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
+    cm_time += (double)packet / ((double)(end.QuadPart - begin.QuadPart) / frequency.QuadPart);
     delete_countmax_sketch(cs);
     //printf("%d\t%lf\t%d\t%d\n", w, (double)(end.QuadPart - begin.QuadPart) * 1000 / packet, packet, ht_count);
     //printf("%lf\n", (double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
@@ -227,6 +231,8 @@ void do_work_2(const int w) {
     }
     QueryPerformanceCounter(&end);
     cs_cpu += (int)((double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
+    cs_time += (double)packet / ((double)(end.QuadPart - begin.QuadPart) / frequency.QuadPart);
+
     delete_countsketch_sketch(cs);
     //printf("%d\t%lf\t%d\t%d\n", w, (double)(end.QuadPart - begin.QuadPart) * 1000 / packet, packet, ht_count);
     //printf("%lf\n", (double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
@@ -263,6 +269,7 @@ void do_work_1(const int w) {
     //printf("%d\t%lf\t%d\t%d\n", w, (double)(end.QuadPart - begin.QuadPart) * 1000 / packet, packet,ht_count);
     //printf("%d\t%lf\t", w, (double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
     fss_cpu += (int)((double)(end.QuadPart - begin.QuadPart) * 1000 / packet);
+    fss_time += (double)packet / ((double)(end.QuadPart - begin.QuadPart) / frequency.QuadPart);
     delete_fss_sketch(cs);
 
     //do_work_2(w);
@@ -274,6 +281,9 @@ void do_work(const int w) {
     fss_cpu = 0;
     cs_cpu = 0;
     cm_cpu = 0;
+    fss_time = 0;
+    cs_time = 0;
+    cm_time = 0;
     for(int i=0;i<work_round;i++) {
 
         do_work_1(w);
@@ -289,7 +299,8 @@ void do_work(const int w) {
         do_work_3(w);
 
     }
-        printf("%d\t%d\t%d\t%d\n", w, fss_cpu/work_round,cs_cpu/work_round,cm_cpu/work_round);
+        printf("%d\t%d\t%d\t%d", w,  cm_cpu / work_round,fss_cpu/work_round,cs_cpu/work_round);
+        printf("\t%lf\t%lf\t%lf\n", cm_time / work_round, fss_time/work_round,cs_time/work_round);
 }
 
 
@@ -340,12 +351,14 @@ int main() {
     flows = flow_gen(count);
     traffics = traffic_gen(count);
     //std::vector<int> v = { 1,2,3,4,5,6,7,8,9,10 };
-    do_work(500);
-    for (int d = 500; d < 10000; d += 1500) {
-    do_work(d);
+    do_work(1000);
+    while (1) {
+        for (int d = 1000; d <= 3000; d += 1000) {
+            do_work(d);
+        }
+        //for (int d = 500; d < 4000; d += 500) {
+        //do_work_2(1000);
+        //}
+        system("pause");
     }
-    //for (int d = 500; d < 4000; d += 500) {
-    //do_work_2(1000);
-    //}
-    system("pause");
 }

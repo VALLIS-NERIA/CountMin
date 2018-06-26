@@ -52,7 +52,12 @@ namespace Simulation {
         public ElemType Query(Flow flow) {
             //return result.Max() + (long)(this._threshold * 0.5);
             //if (!flow.OutgressSwitch.IsEdge) throw new ArgumentException("The flow's egress switch is not edge");
-            return Math.Max(this.data[flow.OutgressSwitch].Query(flow), this.data[flow.IngressSwitch].Query(flow));
+            if (this.data[flow.OutgressSwitch] is CountMax.SwitchSketch) {
+                return Math.Max(this.data[flow.OutgressSwitch].Query(flow), this.data[flow.IngressSwitch].Query(flow));
+            }
+            else {
+                return Math.Max(this.data[flow.OutgressSwitch].Query(flow), this.data[flow.IngressSwitch].Query(flow));
+            }
         }
 
         public ElemType this[Flow key] => this.Query(key);

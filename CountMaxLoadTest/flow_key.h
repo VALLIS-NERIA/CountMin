@@ -11,8 +11,13 @@
 struct flow_key {
     uint32_t srcip;
     uint32_t dstip;
-    uint16_t srcport;
-    uint16_t dstport;
+    union {
+        struct {
+            uint16_t srcport;
+            uint16_t dstport;
+        };
+        uint32_t port;
+    };
     uint16_t protocol;
 };
 inline uint32_t flow_key_hash_old(struct flow_key key) {
@@ -27,7 +32,7 @@ inline uint32_t flow_key_hash_old(struct flow_key key) {
 inline uint32_t flow_key_hash(struct flow_key key, uint32_t bits) {
     uint32_t hash = hash_32(key.srcip, bits);
     hash ^= hash_32(key.dstip, bits);
-    hash ^= hash_32(*((uint32_t*)&(key.srcport)), bits);
+    hash ^= hash_32(key.port, bits);
     hash ^= hash_32(key.protocol, bits);
     //hash ^= hash_32(key->dstport, bits);
     //hash ^= hash_32(key->protocol, bits);

@@ -23,7 +23,8 @@ namespace Simulator {
         internal static string[] topo_list =
         {
             "Fattree",
-            //"Spine" ,
+            "Spine",
+            "SpineNew"
             /*"HyperX",*/
         };
 
@@ -33,22 +34,6 @@ namespace Simulator {
         //private static int[] count_list = {50000, 100000, 200000, 300000};
         internal static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
 
-        static void Test(__arglist) {
-            var iterator = new ArgIterator(__arglist);
-            var o = __refvalue(iterator.GetNextArg(), CountMax.SwitchSketch);
-            //Test(__arglist(o));
-
-            for (int x = 1; x < 8; x++) {
-                if (x > 5) {
-                    break; // x到6的时候会进入到这里
-                    //break了之后立刻跳出for外面-------
-                } //             |
-
-                Console.WriteLine(x); //这个被跳过了  |
-            } //             |
-
-            //   <------------------------------------
-        }
 
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
@@ -66,8 +51,8 @@ namespace Simulator {
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
             //taskList = taskList.Concat(SketchCompareAppr());
-            taskList = taskList.Concat(SketchCompare());
-            //taskList = taskList.Concat(ConcurrentReroute());
+            //taskList = taskList.Concat(SketchCompare());
+            taskList = taskList.Concat(ConcurrentReroute());
             //taskList = taskList.Concat(Prototype());
             //PartialReroute();
             //taskList = taskList.Concat(BenchMark("Original"));
@@ -77,54 +62,17 @@ namespace Simulator {
             //SketchAppr();
             //SketchCompareTime();
             var taskArray = taskList.ToArray();
-            RunTask(taskArray);
-            //RerouteEval();
+            RunTask(taskArray,6);
+            //PrintToTxt();
+            var oldOut = Console.Out;
+            var sw = new StreamWriter("dddddddaaaata.txt");
+            Console.SetOut(sw);
+            RerouteEval();
+            sw.Flush();
+            Console.SetOut(oldOut);
+            sw.Close();
             Console.ReadLine();
         }
-
-        static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ITopoSketch<Flow, ElemType> sketch) {
-            var topo = LoadTopo(topoJson);
-            var flowSet = LoadFlow(flowJson, topo);
-            return ReRouteWithSketch(topo, flowSet, sketch);
-        }
-
-        static List<Flow> ReRouteWithSketch(Topology topo, List<Flow> flowSet, ITopoSketch<Flow, ElemType> sketch) {
-            foreach (var sw in topo.Switches) {
-                sw.ClearFlow();
-            }
-
-            foreach (Flow flow in flowSet) {
-                sketch.Update(flow, (long) flow.Traffic);
-            }
-
-            var newFlow = new List<Flow>();
-            foreach (Flow flow in flowSet) {
-                newFlow.Add(new Flow(flow) {Traffic = sketch.Query(flow)});
-            }
-
-            ReRoute(newFlow, Greedy.FindPath);
-            return newFlow;
-        }
-
-
-        static List<ReroutedFlow> ReRouteTopWithSketch(Topology topo, List<Flow> flowSet, ITopoSketch<Flow, ElemType> sketch, double thres) {
-            foreach (var sw in topo.Switches) {
-                sw.ClearFlow();
-            }
-
-            flowSet.Sort((f1, f2) => (int) (f2.Traffic - f1.Traffic));
-
-            var newFlow = new List<ReroutedFlow>();
-            foreach (Flow flow in flowSet) {
-                //ReroutedFlow newf = new ReroutedFlow(flow) {Traffic = sketch.Query(flow), OriginTraffic = flow.Traffic};
-                ReroutedFlow newf = new ReroutedFlow(flow) {Traffic = sketch.Query(flow), OriginTraffic = flow.Traffic};
-                newFlow.Add(newf);
-            }
-
-            ReRoute(newFlow, GreedySpine.FindPath, (int) (thres * flowSet.Count));
-            return newFlow;
-        }
-
 
         private delegate Topology TopoFactory();
 
@@ -157,7 +105,9 @@ namespace Simulator {
                     //}
 
                     var fout = $"REROUTE_{sketch.SketchClassName}_k{sketch.W}_{fin}.json";
-                    var newFlow = ReRouteTopWithSketch(topo, flowSet, sketch, 0.01);
+                    var newFlow = arg.topos.StartsWith("Spine")
+                                      ? ReRouteTopWithSketch(topo, flowSet, sketch, 0.01, GreedySpine.FindPath)
+                                      : ReRouteTopWithSketch(topo, flowSet, sketch, 0.01);
                     using (var sw = new StreamWriter(fout)) {
                         sw.WriteLine(JsonConvert.SerializeObject(newFlow.ToReroutedCoflowJson(topo)));
                     }
@@ -176,12 +126,13 @@ namespace Simulator {
             foreach (string topos in topo_list)
             foreach (var flow_count in count_list) {
                 if (k != 1000 && flow_count != 200000) continue;
-                TopoFactory topoF = Generator.Program.TestTopoGen;
-                IFS cm = new FilteredSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
+                //TopoFactory topoF = topos.StartsWith("Spine") ? (() => Generator.Program.LeafSpineGen() ):( () => Generator.Program.FatTreeGen());
+                TopoFactory topoF = topos.StartsWith("Spine") ? (TopoFactory) (() => Generator.Program.LeafSpineGen()) : () => Generator.Program.FatTreeGen();
+                IFS cm = new HalfSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
                 int k_sv = (int) (1.2 * k);
-                IFS sv = new FilteredSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
-                IFS cs = new FilteredSketch<CountSketch.SwitchSketch>(k, 2, ths, () => new CountSketch.SwitchSketch(k, 2));
-                IFS fss = new FilteredSketch<FSpaceSaving.SwitchSketch>(k, 2, ths, () => new FSpaceSaving.SwitchSketch(k));
+                IFS sv = new HalfSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
+                IFS cs = new HalfSketch<CountSketch.SwitchSketch>(k, 2, ths, () => new CountSketch.SwitchSketch(k, 2));
+                IFS fss = new HalfSketch<FSpaceSaving.SwitchSketch>(k, 2, ths, () => new FSpaceSaving.SwitchSketch(k));
                 //_reroute((cm, topos, flow_count, topoF));
                 //_reroute((cs, topos, flow_count, topoF));
                 //_reroute((fss, topos, flow_count, topoF));
@@ -203,8 +154,7 @@ namespace Simulator {
             //var ths_list = new []{0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000 };
             //var d_list = Enumerable.Range(1, 10);
             //for (var _ths = 0; _ths <= 3000; _ths += 200)
-            foreach (int k in k_list) 
-            {
+            foreach (int k in k_list) {
                 var d = 2;
                 //var _ths = 1000;
                 //foreach (int d in d_list) {
@@ -296,10 +246,39 @@ namespace Simulator {
             return q;
         }
 
+        struct HHData {
+            public double hh_cm1;
+            public double hh_cm2;
+            public double hh_cm10;
+            public double hh_fss1;
+            public double hh_fss2;
+            public double hh_fss10;
+            public double hh_cs1;
+            public double hh_cs2;
+            public double hh_cs10;
+        }
+
+        struct DataLine {
+            public string topos;
+            public int flow_count;
+            public int k;
+            public double threshold;
+            public double cm_err;
+            public double fss_err;
+            public double cs_err;
+            public double cm_hit;
+            public double fss_hit;
+            public double cs_hit;
+            public double cm_time;
+            public double fss_time;
+            public double cs_time;
+            public HHData hh;
+        }
+
+        static List<DataLine> data = new List<DataLine>();
+
         static Task[] SketchCompareAppr() {
             var taskList = new List<Task>();
-            var time = new StreamWriter("timenew.csv");
-            var anal = new StreamWriter("analysis_All.csv");
             var ft = Generator.Program.FatTreeGen(8);
             var sp = Generator.Program.LeafSpineGen();
 
@@ -312,22 +291,18 @@ namespace Simulator {
                 //if (k != 1000 /*&& flow_count != 150000 && flow_count!=250000*/) continue;
 
                 void _do() {
-                    //var flow_count = "zipf_200000";
-                    var topo = topos == "Spine" ? sp : ft;
-                    //var fin = $"zipf_{flow_count}_{topos}_{algorithm.Method.ReflectedType.Name}";
+                    var topo = topos.StartsWith("Spine") ? sp : ft;
                     var fin = $"{topos}_{flow_count}";
-                    //fin = $"REROUTE_CountMax_k{k}_{fin}.json";
-                    //var fin = $"udp12w_{topos}_OSPF.json";
                     var flowSet = LoadFlow(fin, topo);
                     //var flow_count = flowSet.Count;
-                    var cm = new FilteredSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
+                    var cm = new HalfSketch<CountMax.SwitchSketch>(k, 2, ths, () => new CountMax.SwitchSketch(k, 2));
                     cm.Init(topo);
                     int k_sv = (int) (1.2 * k);
-                    var sv = new FilteredSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
+                    var sv = new HalfSketch<SketchVisor.SwitchSketch>(k, 2, ths, () => new SketchVisor.SwitchSketch(k_sv));
                     sv.Init(topo);
-                    var cs = new FilteredSketch<CountSketch.SwitchSketch>(k, 2, ths, () => new CountSketch.SwitchSketch(k, 2));
+                    var cs = new HalfSketch<CountSketch.SwitchSketch>(k, 2, ths, () => new CountSketch.SwitchSketch(k, 2));
                     cs.Init(topo);
-                    var fss = new FilteredSketch<FSpaceSaving.SwitchSketch>(k, 2, ths, () => new FSpaceSaving.SwitchSketch(k));
+                    var fss = new HalfSketch<FSpaceSaving.SwitchSketch>(k, 2, ths, () => new FSpaceSaving.SwitchSketch(k));
                     fss.Init(topo);
                     //Console.WriteLine($"{topos}, {flow_count}, {k} initing                                    ");
 
@@ -373,59 +348,69 @@ namespace Simulator {
                     var list_sv = new List<Tup>();
                     var list_cs = new List<Tup>();
                     var list_fss = new List<Tup>();
-                    //
-                    //var data_cm = new StreamWriter($"data/data_CountMax_{k}_{flowSet.Count}_{topos}.csv");
-                    //var anal_cm = new StreamWriter($"analysis/analysis_CountMax_{k}_{flowSet.Count}_{topos}.csv");
-                    //var data_sv = new StreamWriter($"data/data_SketchVisor_{k_sv}_{flowSet.Count}_{topos}.csv");
-                    //var anal_sv = new StreamWriter($"analysis/analysis_SketchVisor_{k_sv}_{flowSet.Count}_{topos}.csv");
-                    //var data_cs = new StreamWriter($"data/data_CountSketch_{k}_{flowSet.Count}_{topos}.csv");
-                    //var anal_cs = new StreamWriter($"analysis/analysis_CountSketch_{k}_{flowSet.Count}_{topos}.csv");
-                    //
-                    //
-                    //anal_cm.WriteLine("threshold , average , min , max , hits");
-                    //anal_sv.WriteLine("threshold , average , min , max , hits");
-                    //anal_cs.WriteLine("threshold , average , min , max , hits");
-                    //
+
                     foreach (Flow flow in flowSet) {
                         var query_cm = cm.Query(flow);
                         list_cm.Add((flow.Traffic, query_cm));
-                        //data_cm.WriteLine($"{flow.Traffic} , {query_cm}");
-                        //var query_sv = sv.Query(flow);
-                        //list_sv.Add((flow.Traffic, query_sv));
-                        //data_sv.WriteLine($"{flow.Traffic} , {query_sv}");
                         var query_cs = cs.Query(flow);
                         list_cs.Add((flow.Traffic, query_cs));
-                        //data_cs.WriteLine($"{flow.Traffic},{query_cs}");
                         var query_fss = fss.Query(flow);
                         list_fss.Add((flow.Traffic, query_fss));
                     }
 
+
+                    var hh_cm1 = HHFilter(list_cm, 1d / 1000).Average();
+                    var hh_cm2 = HHFilter(list_cm, 1d / 2000).Average();
+                    var hh_cm10 = HHFilter(list_cm, 1d / 10000).Average();
+                    var hh_fss1 = HHFilter(list_fss, 1d / 1000).Average();
+                    var hh_fss2 = HHFilter(list_fss, 1d / 2000).Average();
+                    var hh_fss10 = HHFilter(list_fss, 1d / 10000).Average();
+                    var hh_cs1 = HHFilter(list_cs, 1d / 1000).Average();
+                    var hh_cs2 = HHFilter(list_cs, 1d / 2000).Average();
+                    var hh_cs10 = HHFilter(list_cs, 1d / 10000).Average();
                     //data_cm.Close();
                     //
                     //
                     foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
                         var ll_cm = RelativeErrorOfTop(list_cm, threshold);
-                        var count_cm = ll_cm.Count(d => d != 0);
-                        var t_cm = list_cm.Where(t => t.Item2 != 0).Sum(t => t.Item1);
-                        //Console.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
-                        //anal_cm.WriteLine($"{threshold} , {ll_cm.Average()} , {ll_cm.Min()} , {ll_cm.Max()} , {count_cm}");
-
-                        //var ll_sv = Filter(list_sv, 1 - threshold);
-                        //var count_sv = ll_sv.Count(d => d != 0);
-                        //anal_sv.WriteLine($"{threshold} , {ll_sv.Average()} , {ll_sv.Min()} , {ll_sv.Max()} , {count_sv}");
-
                         var ll_cs = RelativeErrorOfTop(list_cs, threshold);
-                        var count_cs = ll_cs.Count(d => d != 0);
-                        var t_cs = list_cs.Where(t => t.Item2 != 0).Sum(t => t.Item1);
-                        //anal_cs.WriteLine($"{threshold} , {ll_cs.Average()} , {ll_cs.Min()} , {ll_cs.Max()} , {count_cs}");
                         var ll_fss = RelativeErrorOfTop(list_fss, threshold);
-                        var count_fss = ll_fss.Count(d => d != 0);
-                        var t_fss = list_fss.Where(t => t.Item2 != 0).Sum(t => t.Item1);
-
-                        var total = list_cm.Sum(t => t.Item1);
-                        //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold},{t_cm/total},{t_fss/total},{t_cs/total},{cm_time},{fss_time},{cs_time}");
+                        var t_cm = ElephantCover(list_cm, threshold);
+                        var t_fss = ElephantCover(list_fss, threshold);
+                        var t_cs = ElephantCover(list_cs, threshold);
                         Console.WriteLine(
-                            $"\r{topos}, {flow_count}, {k},{threshold}, {ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()},{t_cm / total},{t_fss / total},{t_cs / total},{cm_time},{fss_time},{cs_time}");
+                            $"\r{topos}, {flow_count}, {k},{threshold}, {ll_cm.Average()},{ll_fss.Average()},{ll_cs.Average()},{t_cm},{t_fss},{t_cs},{cm_time},{fss_time},{cs_time}");
+                        lock (data) {
+                            data.Add(new DataLine
+                            {
+                                topos = topos,
+                                flow_count = flow_count,
+                                k = k,
+                                threshold = threshold,
+                                cm_err = ll_cm.Average(),
+                                fss_err = ll_fss.Average(),
+                                cs_err = ll_cs.Average(),
+                                cm_hit = t_cm,
+                                fss_hit = t_fss,
+                                cs_hit = t_cs,
+                                cm_time = cm_time,
+                                cs_time = cs_time,
+                                fss_time = fss_time,
+                                hh = new HHData
+                                {
+                                    hh_cm1 = hh_cm1,
+                                    hh_cm2 = hh_cm2,
+                                    hh_cm10 = hh_cm10,
+                                    hh_fss1 = hh_fss1,
+                                    hh_fss2 = hh_fss2,
+                                    hh_fss10 = hh_fss10,
+                                    hh_cs1 = hh_cs1,
+                                    hh_cs2 = hh_cs2,
+                                    hh_cs10 = hh_cs10,
+                                }
+                            });
+                        }
+
                         //Console.WriteLine($"\r{topos}, {flow_count}, {k},{threshold} , {ll_fss.Average()} , {ll_fss.Min()} , {ll_fss.Max()} , {count_fss}                                ");
                         //    //lock (anal) {
                         //    //    anal.Write($"{topos},{k},{flow_count},{threshold} ,");
@@ -502,48 +487,7 @@ namespace Simulator {
             return taskList.ToArray();
         }
 
-        static void Filter() {
-            var topo = global::Generator.Program.FatTreeGen(8);
-            var flowSet = LoadFlow("UDP fattree.json", topo);
-            int w = 1000;
-            int d = 2;
-            int count = 5;
-            while (count-- > 0) {
-                var fcm = new FilteredCountMax(w, d, topo);
-                var cm = new CountMax(w, d);
-                cm.Init(topo);
-                var t00 = DateTime.Now;
-                foreach (Flow flow in flowSet) {
-                    fcm.Update(flow, (ElemType) flow.Traffic);
-                }
-
-                var t = DateTime.Now;
-                foreach (Flow flow in flowSet) {
-                    cm.Update(flow, (ElemType) flow.Traffic);
-                }
-
-                var t11 = DateTime.Now;
-
-                var lf = new List<Tup>();
-                var l = new List<Tup>();
-                foreach (Flow flow in flowSet) {
-                    var qfcm = fcm.Query(flow);
-                    var qcm = cm.Query(flow);
-                    lf.Add((flow.Traffic, qfcm));
-                    l.Add((flow.Traffic, qcm));
-                }
-
-                foreach (var threshold in new[] {0.001}.Reverse()) {
-                    var llf = RelativeErrorOfTop(lf, threshold);
-                    var ll = RelativeErrorOfTop(l, threshold);
-
-                    Console.WriteLine($"\r{w}, {d}, {threshold},{llf.Average()}, {ll.Average()}, {(t - t00).TotalMilliseconds},{(t11 - t).TotalMilliseconds}");
-                }
-            }
-        }
-
         static void RerouteEval() {
-            //GC.TryStartNoGCRegion(2L * 1024 * 1024 * 1024);
             foreach (string topos in topo_list)
             foreach (var flow_count in count_list) {
                 var topo1 = topos == "Fattree" ? Generator.Program.FatTreeGen(8) : Generator.Program.LeafSpineGen();
@@ -567,17 +511,85 @@ namespace Simulator {
             }
         }
 
-        static void TTT() {
-            var topo = global::Generator.Program.FatTreeGen(8);
-            foreach (int count in count_list) {
-                var flowSet = LoadFlow($"Fattree_{count}", topo);
-                var traffics = from f in flowSet select f.Traffic;
-                var total = traffics.Sum();
-                var hhs = from t in traffics where t > (double) total / 10000d select t;
-                Console.WriteLine($"{total}, {total / 10000}, {hhs.Count()}");
+        static void PrintToTxt() {
+            // approximate
+            foreach (string topos in topo_list) {
+                string topo_prefix = topos == "Fattree" ? "ft" : "hy";
+                var q = from d in data where d.topos == topos && d.k == 1000 orderby d.flow_count ascending select d;
+                // ft_flow_appr_1000_095
+                using (var sw = new StreamWriter(topo_prefix + "_flow_appr_1000_095.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.005)
+                            sw.WriteLine($"{d.flow_count}\t{d.cm_err}\t{d.fss_err}\t{d.cs_err}");
+
+
+                using (var sw = new StreamWriter(topo_prefix + "_flow_appr_1000_099.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.01)
+                            sw.WriteLine($"{d.flow_count}\t{d.cm_err}\t{d.fss_err}\t{d.cs_err}");
+
+
+                using (var sw = new StreamWriter(topo_prefix + "_flow_hit_1000.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.01)
+                            sw.WriteLine($"{d.flow_count}\t{d.cm_hit}\t{d.fss_hit}\t{d.cs_hit}");
+
+
+                using (var sw = new StreamWriter(topo_prefix + "_flow_time_1000.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.005)
+                            sw.WriteLine($"{d.flow_count}\t{d.cm_time}\t{d.fss_time}\t{d.cs_time}");
+
+
+                q = from d in data where d.topos == topos && d.flow_count == 200000 orderby d.k ascending select d;
+
+                using (var sw = new StreamWriter(topo_prefix + "_k_appr_200000_095.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.005)
+                            sw.WriteLine($"{d.k}\t{d.cm_err}\t{d.fss_err}\t{d.cs_err}");
+
+                using (var sw = new StreamWriter(topo_prefix + "_k_appr_200000_099.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.01)
+                            sw.WriteLine($"{d.k}\t{d.cm_err}\t{d.fss_err}\t{d.cs_err}");
+
+                using (var sw = new StreamWriter(topo_prefix + "_k_hit_200000.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.01)
+                            sw.WriteLine($"{d.k}\t{d.cm_hit}\t{d.fss_hit}\t{d.cs_hit}");
+
+                using (var sw = new StreamWriter(topo_prefix + "_k_time_1000.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.005)
+                            sw.WriteLine($"{d.k}\t{d.cm_time}\t{d.fss_time}\t{d.cs_time}");
+
+                using (var sw = new StreamWriter(topo_prefix + "_k_hh_1000.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.005)
+                            sw.WriteLine($"{d.k}\t{d.hh.hh_cm1}\t{d.hh.hh_fss1}\t{d.hh.hh_cs1}");
+
+                using (var sw = new StreamWriter(topo_prefix + "_k_hh_2000.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.005)
+                            sw.WriteLine($"{d.k}\t{d.hh.hh_cm2}\t{d.hh.hh_fss2}\t{d.hh.hh_cs2}");
+
+                using (var sw = new StreamWriter(topo_prefix + "_k_hh_10000.txt"))
+                    foreach (DataLine d in q)
+                        if (d.threshold == 0.005)
+                            sw.WriteLine($"{d.k}\t{d.hh.hh_cm10}\t{d.hh.hh_fss10}\t{d.hh.hh_cs10}");
             }
         }
 
+        #region tools
+
+        private static double ElephantCover(IEnumerable<(double, double)> list, double threshold) {
+            var tuples = list.ToList();
+            var count = (int) (threshold * tuples.Count());
+            var list1 = tuples.OrderByDescending(t => t.Item1).Take(count);
+            var list2 = tuples.OrderByDescending(t => t.Item2).Take(count);
+            var join = list1.Intersect(list2).Count();
+            return (double) join / count;
+        }
 
         private static List<double> RelativeErrorOfTop(IEnumerable<(double, double)> list, double threshold) {
             var list1 = list;
@@ -588,14 +600,60 @@ namespace Simulator {
         }
 
         private static List<double> HHFilter(IEnumerable<(double, double)> list, double threshold) {
-            var fs = new FileStream("tt", FileMode.Append);
             var list1 = list;
             var total = list.Sum(t => t.Item1);
             list1 = list1.OrderByDescending(t => t.Item1);
-            IEnumerable<(double, double)> valueTuples = list1 as (double, double)[] ?? list1.ToArray();
+            IEnumerable<(double, double)> valueTuples = list1 as List<Tup> ?? list1.ToList();
             valueTuples = valueTuples.Where(t => t.Item1 > total * threshold);
             var q = from tuple in valueTuples where tuple.Item1 >= total * threshold select (Math.Abs(tuple.Item2 - tuple.Item1) / tuple.Item1);
             return q.ToList();
         }
+
+        static List<Flow> ReRouteWithSketch(string topoJson, string flowJson, ITopoSketch<Flow, ElemType> sketch) {
+            var topo = LoadTopo(topoJson);
+            var flowSet = LoadFlow(flowJson, topo);
+            return ReRouteWithSketch(topo, flowSet, sketch);
+        }
+
+        static List<Flow> ReRouteWithSketch(Topology topo, List<Flow> flowSet, ITopoSketch<Flow, ElemType> sketch) {
+            foreach (var sw in topo.Switches) {
+                sw.ClearFlow();
+            }
+
+            foreach (Flow flow in flowSet) {
+                sketch.Update(flow, (long) flow.Traffic);
+            }
+
+            var newFlow = new List<Flow>();
+            foreach (Flow flow in flowSet) {
+                newFlow.Add(new Flow(flow) {Traffic = sketch.Query(flow)});
+            }
+
+            ReRoute(newFlow, Greedy.FindPath);
+            return newFlow;
+        }
+
+        static List<ReroutedFlow> ReRouteTopWithSketch(Topology topo, List<Flow> flowSet, ITopoSketch<Flow, ElemType> sketch, double thres) =>
+            ReRouteTopWithSketch(topo, flowSet, sketch, thres, Greedy.FindPath);
+
+        static List<ReroutedFlow> ReRouteTopWithSketch(Topology topo, List<Flow> flowSet, ITopoSketch<Flow, ElemType> sketch, double thres, RoutingAlgorithm algo) {
+            foreach (var sw in topo.Switches) {
+                sw.ClearFlow();
+            }
+
+            flowSet.Sort((f1, f2) => (int) (f2.Traffic - f1.Traffic));
+
+            var newFlow = new List<ReroutedFlow>();
+            foreach (Flow flow in flowSet) {
+                //ReroutedFlow newf = new ReroutedFlow(flow) {Traffic = sketch.Query(flow), OriginTraffic = flow.Traffic};
+                ReroutedFlow newf = new ReroutedFlow(flow) {Traffic = sketch.Query(flow), OriginTraffic = flow.Traffic};
+                newFlow.Add(newf);
+            }
+
+            ReRoute(newFlow, algo, (int) (thres * flowSet.Count));
+            return newFlow;
+        }
+
+        #endregion
     }
 }
