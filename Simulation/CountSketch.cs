@@ -105,9 +105,12 @@ namespace Simulation {
             private ElemType ForceQuery(object key) {
                 var result = new List<ElemType>();
                 foreach (CSLine cmLine in stat) {
-                    result.Add(cmLine.Query(key));
+                    var q = cmLine.Query(key);
+                    if (q > 0)
+                        result.Add(cmLine.Query(key));
                 }
-                result.Sort();
+
+                if (result.Count == 0) return 0;
                 var len = result.Count;
                 if (len % 2 == 0) {
                     return (result[len / 2] + result[len / 2 - 1]) / 2;
@@ -121,6 +124,7 @@ namespace Simulation {
                 if (!this.heap.ContainsKey(key)) {
                     return 0;
                 }
+                return this.heap[key];
                 var result = new List<ElemType>();
                 foreach (CSLine cmLine in stat) {
                     var q = cmLine.Query(key);

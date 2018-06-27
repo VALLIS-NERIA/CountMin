@@ -7,12 +7,13 @@ SUBFIX = ".eps"
 
 set key left top box
 
-set yrange[0:1500]
-set ytics ("0" 0, "500" 500, "1000" 1000, "1500" 1500)
-set xrange[100:3000]
-set xtics ("1" 100, "5" 500, "10" 1000, "15" 1500, "20" 2000, "25" 2500, "30" 3000)
+set yrange[0:800]
+set ytics 200
+set xrange[1000:3000]
+# set xtics ("1" 100, "5" 500, "10" 1000, "15" 1500, "20" 2000, "25" 2500, "30" 3000)
+set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
 
-set xl '{/Times-Italic k} ({/Symbol \264}10^2)'
+set xl '{/Times-Italic k} ({/Symbol \264}10^3)'
 set yl 'Running Time (ms)'
 
 FILE = "./".TOPO."_k_time_".KPARA.".txt"
@@ -26,7 +27,7 @@ FILE u 1:2 with linespoints pointtype 2 dt 1 lw 5.5 pointsize 2 title 'CountMax'
 set key left top box
 
 set yrange[0:800]
-set ytics ("0" 0, "200" 200, "400" 400, "600" 600, "800" 800)
+set ytics 200
 
 set xrange[50000:300000]
 set xtics ("5" 50000, "10" 100000, "15" 150000, "20" 200000, "25" 250000, "30" 300000)

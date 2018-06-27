@@ -1,6 +1,6 @@
 reset
 set size 0.7,0.7
-set terminal postscript eps enhanced "Times" 24
+set terminal postscript eps enhanced "Times" 24 dashed dashlength 0.3
 # set terminal postscript eps enhanced "NimbusSanL-Regu" fontfile "uhvr8a.pfb" 24
 set key font ",22"
 set rmargin 1
@@ -8,27 +8,27 @@ call "draw_appr.txt" "200000_095" "1000_095" "ft" "1"
 call "draw_appr.txt" "200000_095" "1000_095" "hy" "1"
 call "draw_appr.txt" "200000_099" "1000_099" "ft" "0.8"
 call "draw_appr.txt" "200000_099" "1000_099" "hy" "0.8"
-set key right top box
+#set key right top box
 call "draw_load.txt" "200000" "1000" "ft"
-set key right bottom box
+#set key right bottom box
 call "draw_load.txt" "200000" "1000" "hy"
 call "draw_time.txt" "200000" "1000" "ft"
 call "draw_time.txt" "200000" "1000" "hy"
 call "draw_hit.txt" "200000" "1000" "ft"
 call "draw_hit.txt" "200000" "1000" "hy"
 call "draw_benchmark.txt"
-set yrange[0:0.8]
+#set yrange[0:0.8]
 call "draw_hh_k.txt" "1000" "ft"
 call "draw_hh_k.txt" "1000" "hy"
 #call "draw_hh_k.txt" "2000" "ft"
-set yrange[0:1]
+#set yrange[0:1]
 call "draw_hh_k.txt" "10000" "ft"
 #call "draw_hh_k.txt" "2000" "hy"
 call "draw_hh_k.txt" "10000" "hy"
 call "draw_hh_th.txt" "1000" "ft"
 call "draw_hh_th.txt" "1000" "hy"
-call "draw_proto.txt" "2000" "200" "proto"
 call "draw_cm.txt"
-call "draw_cpu.txt"
-call "draw_throughput.txt"
 call "draw_filter.txt"
+call "draw_throughput.txt"
+call "draw_cpu.txt"
+call "draw_proto.txt" "2000" "200" "proto"
