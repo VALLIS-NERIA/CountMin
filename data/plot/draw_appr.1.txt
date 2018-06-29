@@ -8,8 +8,8 @@ SUBFIX = ".eps"
 
 set key right top box
 
-set yrange[0:0.3]
-set ytics 0.1
+set yrange[0:0.2]
+set ytics 0.05
 set xrange[1000:3000]
 # set xtics ("1" 100, "5" 500, "10" 1000, "15" 1500, "20" 2000, "25" 2500, "30" 3000)
 set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
@@ -41,7 +41,7 @@ FILE u 1:2 with linespoints pointtype 2 dt 1 lw 5.5 pointsize 2 title 'CountMax'
 
 set key left top box
 
-set yrange[0:0.5]
+set yrange[0:0.3]
 set ytics 0.1
 set xrange[50000:300000]
 set xtics ("5" 50000, "10" 100000, "15" 150000, "20" 200000, "25" 250000, "30" 300000)

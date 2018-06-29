@@ -10,7 +10,7 @@ set yl 'Number of Processed Packets'
 set ytics ("0" 0, "10M" 10000000, "20M" 20000000, "30M" 30000000, "40M" 40000000, "50M" 50000000, "60M" 60000000, "70M" 70000000)
 set xrange[-0.5:2.5]
 set xtics 1
-set xl "Sketch"
+set xl "{/Times-Italic k}"
 set output "./fig/throughput.eps"
 plot \
 'throughput.txt' u 2:xtic(1) fill pattern 0 border -1  lt -1 title 'CountMax', \

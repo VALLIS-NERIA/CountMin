@@ -12,7 +12,7 @@ set ytics 100
 set xrange[-0.5:2.5]
 set xtics 1
 
-set xl '{/Times-Italic k} ({/Symbol \264}10^2)'
+set xl '{/Times-Italic k}'
 set yl 'CPU Cycle per Packet'
 
 FILE = "./cpu.txt"

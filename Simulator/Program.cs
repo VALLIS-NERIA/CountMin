@@ -53,8 +53,8 @@ namespace Simulator {
             //taskList = taskList.Concat(CMReroute());
             //SVReroute();
             //taskList = taskList.Concat(SketchCompareAppr());
-            //taskList = taskList.Concat(SketchCompare());
-            taskList = taskList.Concat(ProtoNew());
+            taskList = taskList.Concat(SketchCompare());
+            //taskList = taskList.Concat(ProtoNew());
             //taskList = taskList.Concat(ConcurrentReroute());
             //taskList = taskList.Concat(Prototype());
             //PartialReroute();
@@ -67,13 +67,13 @@ namespace Simulator {
             var taskArray = taskList.ToArray();
             RunTask(taskArray, 3, false);
             //PrintToTxt();
-            var oldOut = Console.Out;
-            var sw = new StreamWriter("dddddddaaaata.txt");
-            Console.SetOut(sw);
-            RerouteEvalProto();
-            sw.Flush();
-            Console.SetOut(oldOut);
-            sw.Close();
+            //var oldOut = Console.Out;
+            //var sw = new StreamWriter("dddddddaaaata.txt");
+            //Console.SetOut(sw);
+            //RerouteEvalProto();
+            //sw.Flush();
+            //Console.SetOut(oldOut);
+            //sw.Close();
             Console.WriteLine("Finished.");
             Console.ReadLine();
         }
@@ -111,16 +111,20 @@ namespace Simulator {
         static Task[] SketchCompare() {
             var taskList = new List<Task>();
             var ft = Generator.Program.LeafSpineGen();
-            var flow_count = 200000;
+            //var flow_count = 200000;
             var topos = "SpineNew";
             var k = 1000;
             //var ths_list = new []{0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000 };
             var d_list = Enumerable.Range(1, 10);
             //for (var _ths = 0; _ths <= 3000; _ths += 200)
+            var d = 2;
+            foreach (int flow_count in count_list) 
+                    
+            
             //foreach (int k in k_list) 
-            //var d = 2;
             //var _ths = 1000;
-            foreach (int d in d_list) {
+            //foreach (int d in d_list) 
+            {
 
                 void _do(object obj) {
                     var ths = 0;
@@ -128,27 +132,36 @@ namespace Simulator {
                     var fin = $"{topos}_{flow_count}";
                     var flowSet = LoadFlow(fin, topo);
                     var cm = (IFS) obj;
+                    var eg = new EgressSketch<CountMax.SwitchSketch>(2 * cm.W, 2, 0, () => new CountMax.SwitchSketch(cm.W, d));
                     cm.Init(topo);
+                    eg.Init(topo);
+                    var t00 = DateTime.Now;
                     foreach (Flow flow in flowSet) {
                         cm.Update(flow, (ElemType) flow.Traffic);
                     }
+                    var t0 = DateTime.Now - t00;
+                    var t10 = DateTime.Now;
+                    foreach (Flow flow in flowSet) 
+                        eg.Update(flow, (ElemType) flow.Traffic);
+                    var t1 = DateTime.Now - t10;
 
                     var list_cm = new List<Tup>();
+                    var list_eg = new List<Tup>();
                     foreach (Flow flow in flowSet) {
                         var query_cm = cm.Query(flow);
                         list_cm.Add((flow.Traffic, query_cm));
+                        var query_eg = eg.Query(flow);
+                        list_eg.Add((flow.Traffic, query_eg));
                     }
-                    string buf = d.ToString();
-                    foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
-                        var ll_cm = RelativeErrorOfTop(list_cm, threshold);
-                        var count_cm = ll_cm.Count(d1 => d1 != 0);
-                        var t_cm = list_cm.Where(t => t.Item2 != 0).Sum(t => t.Item1);
+                    string buf = flow_count.ToString();
+                        buf += $",{t0.TotalMilliseconds},{t1.TotalMilliseconds}";
 
-
-                        var total = list_cm.Sum(t => t.Item1);
-                        buf += $",{ll_cm.Average()}";
-                        //Console.WriteLine($"\r{topos},{cm.GetType().Name}, {k}, {d}, {threshold},{ll_cm.Average()}");
-                    }
+                    //foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
+                    //    var ll_cm = RelativeErrorOfTop(list_cm, threshold);
+                    //    var ll_eg = RelativeErrorOfTop(list_cm, threshold);
+                    //    buf += $",{ll_cm.Average()},{ll_eg.Average()}";
+                    //    //Console.WriteLine($"\r{topos},{cm.GetType().Name}, {k}, {d}, {threshold},{ll_cm.Average()}");
+                    //}
                     buf = buf.PadRight(Console.WindowWidth - 1);
                     Console.WriteLine(buf);
                 }

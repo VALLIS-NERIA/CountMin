@@ -32,7 +32,7 @@ set key left top box
 set xrange[-0.5:2.5]
 set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
 
-set xl 'Number of Flows ({/Symbol \264}10^3)'
+set xl 'Number of Flows'
 
 FILE = "./".TOPO."_flow_load_".FPARA.".txt"
 set output OUTDIR.TOPO."_flow_load_".FPARA.SUBFIX
