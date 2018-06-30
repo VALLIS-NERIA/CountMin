@@ -32,15 +32,13 @@ namespace Simulation {
                 if (sw.IsEdge) {
                     this.data.Add(sw, factoryMethod());
                 }
-                else {
-                    this.filter.Add(sw, new CountMin.SwitchSketch(this.W, this.D));
-                }
             }
         }
 
+        private int count = 0;
         public void Update(Flow flow, ElemType value) {
-            var t = value;
             if (rnd.NextDouble() < 0.5) {
+            //if (this.count%2==0) {
                 this.data[flow.IngressSwitch].Update(flow, value);
             }
             else {

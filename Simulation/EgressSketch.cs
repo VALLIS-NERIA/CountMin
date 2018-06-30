@@ -34,8 +34,6 @@ namespace Simulation {
         }
 
         public void Update(Flow flow, ElemType value) {
-            var t = value;
-
             this.data[flow.OutgressSwitch].Update(flow, value);
         }
 

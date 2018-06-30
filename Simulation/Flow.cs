@@ -30,6 +30,9 @@ namespace Simulation {
         }
     }
     public class Flow : IEnumerable<Switch> {
+        private static Random rnd = new Random();
+
+        private int hash = rnd.Next();
         //public string name;
         public Switch IngressSwitch => Nodes.First();
 
@@ -133,6 +136,7 @@ namespace Simulation {
         public IEnumerator<Switch> GetEnumerator() { return Nodes.GetEnumerator(); }
         public override string ToString() { return $"{IngressSwitch} =={Traffic:F1}=> {OutgressSwitch}"; }
 
+        public override int GetHashCode() { return this.hash;}
         IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
         //public string ToString(bool inShort) { return inShort ? $"{name}@{Switch.name}" : ToString(); }
     }

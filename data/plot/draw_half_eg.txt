@@ -3,8 +3,8 @@ SUBFIX = ".eps"
 #reset
 
 set key top right box
-set yrange[0:0.1]
-set ytics 0.02
+set yrange[0:0.2]
+set ytics 0.05
 set yl 'Average Estimation Error'
 set xrange[1000:3000]
 set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
@@ -13,37 +13,74 @@ set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
 set xl '{/Times-Italic k} ({/Symbol \264}10^3)'
 set yl 'Average Estimation Error'
 
-FILE = "./half_eg.txt"
-set output OUTDIR."half_eg_099".SUBFIX
+FILE = "./half_eg_k.txt"
+set output OUTDIR."half_eg_099_k".SUBFIX
 
 plot \
 FILE u 1:2 with linespoints pointtype 4 dt 2 lw 5.5 pointsize 2 title 'Cooperative',\
 FILE u 1:3 with linespoints pointtype 2 dt 2 lw 5.5 pointsize 2 title 'Non-Cooperative',
 
 
-set output OUTDIR."half_eg_095".SUBFIX
+set output OUTDIR."half_eg_095_k".SUBFIX
 
-set yrange[0:0.05]
-set ytics 0.01
-
-# unset key
-# set key default
-# set key font ",20"
+set yrange[0:0.1]
+set ytics 0.02
 
 plot \
 FILE u 1:4 with linespoints pointtype 4 dt 2 lw 5.5 pointsize 2 title 'Cooperative',\
 FILE u 1:5 with linespoints pointtype 2 dt 2 lw 5.5 pointsize 2 title 'Non-Cooperative',
 
 
+FILE = "./half_eg_flow.txt"
+set xrange[50000:300000]
+set xtics ("5" 50000, "10" 100000, "15" 150000, "20" 200000, "25" 250000, "30" 300000)
+set xl 'Number of Flows ({/Symbol \264}10^4)'
+
+set yrange[0:0.3]
+set ytics 0.05
+set output OUTDIR."half_eg_099_flow".SUBFIX
+
+plot \
+FILE u 1:2 with linespoints pointtype 4 dt 2 lw 5.5 pointsize 2 title 'Cooperative',\
+FILE u 1:3 with linespoints pointtype 2 dt 2 lw 5.5 pointsize 2 title 'Non-Cooperative',
+
+
+set output OUTDIR."half_eg_095_flow".SUBFIX
+
+set yrange[0:0.2]
+set ytics 0.05
+
+plot \
+FILE u 1:4 with linespoints pointtype 4 dt 2 lw 5.5 pointsize 2 title 'Cooperative',\
+FILE u 1:5 with linespoints pointtype 2 dt 2 lw 5.5 pointsize 2 title 'Non-Cooperative',
+
+
+#################################################################################
+
 set xl 'Number of Flows ({/Symbol \264}10^4)'
 set yl 'Running Time per Switch(ms)'
 set xrange[50000:300000]
 set xtics ("5" 50000, "10" 100000, "15" 150000, "20" 200000, "25" 250000, "30" 300000)
-set yrange[0:100]
-set ytics 20
+set yrange[0:120]
+set ytics 30
 
-FILE = "./half_eg_time.txt"
-set output OUTDIR."half_eg_time".SUBFIX
+FILE = "./half_eg_time_flow.txt"
+set output OUTDIR."half_eg_time_flow".SUBFIX
+
+plot \
+FILE u 1:2 with linespoints pointtype 4 dt 2 lw 5.5 pointsize 2 title 'Cooperative',\
+FILE u 1:3 with linespoints pointtype 2 dt 2 lw 5.5 pointsize 2 title 'Non-Cooperative',
+
+
+FILE = "./half_eg_time_k.txt"
+
+set xrange[1000:3000]
+set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
+set xl '{/Times-Italic k} ({/Symbol \264}10^3)'
+set yrange[0:120]
+set ytics 30
+
+set output OUTDIR."half_eg_time_k".SUBFIX
 
 plot \
 FILE u 1:2 with linespoints pointtype 4 dt 2 lw 5.5 pointsize 2 title 'Cooperative',\

@@ -18,6 +18,7 @@ namespace Simulator {
     using CountMaxSketch = Simulation.CountMaxSketch.Sketch;
 
     static partial class Program {
+        static Random rnd = new Random();
         internal static int[] k_list = {1000, 1500, 2000, 2500, 3000};
         internal static int[] k_proto = {100, 200, 300};
         internal static int[] flow_proto = {1000, 2000, 3000};
@@ -64,6 +65,7 @@ namespace Simulator {
             //taskList = taskList.Concat(BenchMark("CountSketch", false));
             //SketchAppr();
             //SketchCompareTime();
+            //HalfHalfTest();
             var taskArray = taskList.ToArray();
             RunTask(taskArray, 3, false);
             //PrintToTxt();
@@ -111,39 +113,52 @@ namespace Simulator {
         static Task[] SketchCompare() {
             var taskList = new List<Task>();
             var ft = Generator.Program.LeafSpineGen();
-            //var flow_count = 200000;
+            var flow_count = 200000;
             var topos = "SpineNew";
-            var k = 1000;
+            //var k = 1000;
             //var ths_list = new []{0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000 };
             var d_list = Enumerable.Range(1, 10);
             //for (var _ths = 0; _ths <= 3000; _ths += 200)
             var d = 2;
-            foreach (int flow_count in count_list) 
+            //foreach (int flow_count in count_list) 
                     
             
-            //foreach (int k in k_list) 
+            foreach (int k in k_list) 
             //var _ths = 1000;
             //foreach (int d in d_list) 
             {
 
                 void _do(object obj) {
                     var ths = 0;
+                    //var topo = Generator.Program.FatTreeGen();
                     var topo = ft;
                     var fin = $"{topos}_{flow_count}";
+                    var finRef = $"zipf_{flow_count}_fattree8_OSPF";
                     var flowSet = LoadFlow(fin, topo);
+                    //flowSet.Sort((f1, f2) => rnd.NextDouble() < 0.5 ? -1 : 1);
+                    //flowSet.Sort((f1,f2)=>(int) (f2.Traffic-f1.Traffic));
+                    //var flowSetRef = LoadFlow(finRef, Generator.Program.FatTreeGen());
+                    var flowSetRef = flowSet.Select(f => f.Traffic).ToArray();
                     var cm = (IFS) obj;
-                    var eg = new EgressSketch<CountMax.SwitchSketch>(2 * cm.W, 2, 0, () => new CountMax.SwitchSketch(cm.W, d));
+                    var eg = new EgressSketch<CountMax.SwitchSketch>(cm.W, 2, 0, () => new CountMax.SwitchSketch(cm.W, d));
                     cm.Init(topo);
                     eg.Init(topo);
-                    var t00 = DateTime.Now;
+                    var edges = topo.Switches.Where(sw => sw.IsEdge).ToList();
                     foreach (Flow flow in flowSet) {
-                        cm.Update(flow, (ElemType) flow.Traffic);
+                        var x1 = edges.IndexOf(flow.IngressSwitch);
+                        var x2 = edges.IndexOf(flow.OutgressSwitch);
+                                flow.Nodes[0] = edges[x1 / 2];
+                                flow.Nodes[2] = edges[x2 / 2 + edges.Count/2];
                     }
-                    var t0 = DateTime.Now - t00;
-                    var t10 = DateTime.Now;
-                    foreach (Flow flow in flowSet) 
+
+                    for (int i = 0; i < flowSet.Count; i++) {
+                        Flow flow = flowSet[i];
+                        //flow.Traffic = flowSetRef[i / 50];
+                        //Flow flowRef = flowSetRef[i];
+                        //flow.Traffic = flow.Traffic * (Math.Pow(Math.Min((i - 100), 0), 2) + 1);
+                        cm.Update(flow, (ElemType) flow.Traffic);
                         eg.Update(flow, (ElemType) flow.Traffic);
-                    var t1 = DateTime.Now - t10;
+                    }
 
                     var list_cm = new List<Tup>();
                     var list_eg = new List<Tup>();
@@ -153,23 +168,23 @@ namespace Simulator {
                         var query_eg = eg.Query(flow);
                         list_eg.Add((flow.Traffic, query_eg));
                     }
-                    string buf = flow_count.ToString();
-                        buf += $",{t0.TotalMilliseconds},{t1.TotalMilliseconds}";
-
-                    //foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
-                    //    var ll_cm = RelativeErrorOfTop(list_cm, threshold);
-                    //    var ll_eg = RelativeErrorOfTop(list_cm, threshold);
-                    //    buf += $",{ll_cm.Average()},{ll_eg.Average()}";
-                    //    //Console.WriteLine($"\r{topos},{cm.GetType().Name}, {k}, {d}, {threshold},{ll_cm.Average()}");
-                    //}
+                    string buf = k.ToString();
+                    foreach (var threshold in new[] {0.005, 0.01}.Reverse()) {
+                        var ll_cm = RelativeErrorOfTop(list_cm, threshold);
+                        var ll_eg = RelativeErrorOfTop(list_eg, threshold);
+                        buf += $",{ll_cm.Average()},{ll_eg.Average()}";
+                        //buf += $",{HHFilter(list_cm, 1d / 10000).Average()},{HHFilter(list_eg, 1d / 10000).Average()}";
+                        //Console.WriteLine($"\r{topos},{cm.GetType().Name}, {k}, {d}, {threshold},{ll_cm.Average()}");
+                    }
                     buf = buf.PadRight(Console.WindowWidth - 1);
                     Console.WriteLine(buf);
                 }
 
-                //_do();
+                //_do(new HalfSketch<CountMax.SwitchSketch>(k, 2, 0, () => new CountMax.SwitchSketch(k, d)));
 
                 //_do();
-                var task = new Task(_do, new HalfSketch<CountMax.SwitchSketch>(2 * k, 2, 0, () => new CountMax.SwitchSketch(k, d)));
+                var task = new Task(_do, new HalfSketch<CountMax.SwitchSketch>( k, 2, 0, () => new CountMax.SwitchSketch((int) (k), d)));
+                //var task = new Task(_do, new EgressSketch<CountMax.SwitchSketch>( k, 2, 0, () => new CountMax.SwitchSketch((int) (k*2), d)));
                 //var task1 = new Task(_do, new EgressSketch<CountMax.SwitchSketch>(2 * k, 2, 0, () => new CountMax.SwitchSketch(k, d)));
                 taskList.Add(task);
                 //taskList.Add(task1);
@@ -180,7 +195,7 @@ namespace Simulator {
         }
 
         static void HalfHalfTest() {
-            var flowSet = LoadFlow("Fattree_100000", Generator.Program.FatTreeGen());
+            var flowSet = LoadFlow("Fattree_50000", Generator.Program.FatTreeGen());
             CountMaxSketch s1 = new CountMaxSketch(2000, 2);
             CountMaxSketch s2 = new CountMaxSketch(2000, 2);
             CountMaxSketch s3 = new CountMaxSketch(2000, 4);
