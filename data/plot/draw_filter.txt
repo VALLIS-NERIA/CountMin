@@ -16,8 +16,8 @@ FILE = "./ths_test.txt"
 set output OUTDIR."ths_appr".SUBFIX
 
 plot \
-FILE u 1:4 with linespoints pointtype 4 dt  2 lw 5.5 pointsize 2 title 'with correction',\
-FILE u 1:5 with linespoints pointtype 2 dt  1 lw 5.5 pointsize 2 title 'without correction'
+FILE u 1:4 with linespoints pointtype 4 dt  2 lw 6 pointsize 3 title 'with correction',\
+FILE u 1:5 with linespoints pointtype 2 dt  1 lw 6 pointsize 3 title 'without correction'
 
 
 set output OUTDIR."ths_filter".SUBFIX
@@ -26,4 +26,4 @@ set output OUTDIR."ths_filter".SUBFIX
 set yl 'Filtered Flow Ratio'
 
 plot \
-FILE u 1:3 with linespoints pointtype 4 dt  2 lw 5.5 pointsize 2 title 'CountMax',
+FILE u 1:3 with linespoints pointtype 4 dt  2 lw 6 lc "dark-violet" pointsize 3 title 'CountMax',

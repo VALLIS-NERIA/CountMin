@@ -13,7 +13,7 @@ set xrange[-0.5:2.5]
 set xtics 1
 
 set xl '{/Times-Italic k}'
-set yl 'CPU Cycle per Packet'
+set yl 'CPU Cycles per Packet' offset 1,0,0
 
 FILE = "./cpu.txt"
 set output OUTDIR."k_cpu_".KPARA.SUBFIX
@@ -22,3 +22,5 @@ plot \
 FILE u 2:xtic(1) fill pattern 0 border -1  lt -1 title 'CountMax', \
 FILE u 3 fill pattern 2 border -1 lt -1 title 'FSS', \
 FILE u 4 fill pattern 3 border -1 lt -1 title 'CountSketch' with histogram
+
+set yl offset 0,0,0

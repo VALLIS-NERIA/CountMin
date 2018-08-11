@@ -1,8 +1,11 @@
 reset
-set size 0.7,0.7
-set terminal postscript eps enhanced "Times" 24 dashed dashlength 0.3
+set size 0.7,0.75
+set terminal postscript eps color enhanced "Times" 24 dashed dashlength 0.3
+# set ylabel "ylabel" offset 1,0,0
+# set lmargin 7
 # set terminal postscript eps enhanced "NimbusSanL-Regu" fontfile "uhvr8a.pfb" 24
-set key font ",22"
+set key font ",24"
+set tics font ",26"
 set rmargin 1
 call "draw_appr.1.txt" "200000_095" "1000_095" "ft" "1"
 call "draw_appr.1.txt" "200000_095" "1000_095" "hy" "1"
@@ -19,24 +22,29 @@ call "draw_hit.txt" "200000" "1000" "hy"
 call "draw_benchmark.txt"
 #set yrange[0:0.8]
 set yrange[0:0.01]
-set ytics 0.002
+set ytics ("0" 0,"2" 0.002, "4" 0.004, "6" 0.006, "8" 0.008, "10" 0.01)
+set yl 'Avg Estimation Error ({/Symbol \264}10^{-3})' offset 0,0,0
 call "draw_hh_k.txt" "1000" "ft"
 call "draw_hh_k.txt" "1000" "hy"
 #call "draw_hh_k.txt" "2000" "ft"
 #set yrange[0:1]
 set yrange[0:0.05]
-set ytics 0.01
+set ytics ("0" 0,"1" 0.01, "2" 0.02, "3" 0.03, "4" 0.04, "5" 0.05)
+set yl 'Avg Estimation Error ({/Symbol \264}10^{-2})'
 call "draw_hh_k.txt" "10000" "ft"
 #call "draw_hh_k.txt" "2000" "hy"
 call "draw_hh_k.txt" "10000" "hy"
 call "draw_hh_th.txt" "1000" "ft"
 call "draw_hh_th.txt" "1000" "hy"
-call "draw_cm.txt"
 call "draw_half_eg.txt"
+call "draw_cm.txt"
 #call "draw_filter.txt"
 
+set yl offset 0,0,0
 
 
 call "draw_throughput.txt"
 call "draw_cpu.txt"
 call "draw_proto.txt" "2000" "200" "proto"
+
+set output

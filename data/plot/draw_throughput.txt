@@ -1,4 +1,4 @@
-set style data histogram
+set style data histogram 
 set style histogram clustered gap 1
 set style fill solid border -1
 
@@ -6,8 +6,8 @@ set key right top box
 
 
 set yrange[0:70000000]
-set yl 'Number of Processed Packets'
-set ytics ("0" 0, "10M" 10000000, "20M" 20000000, "30M" 30000000, "40M" 40000000, "50M" 50000000, "60M" 60000000, "70M" 70000000)
+set yl 'Processed Packets (M)'
+set ytics ("0" 0, "10" 10000000, "20" 20000000, "30" 30000000, "40" 40000000, "50" 50000000, "60" 60000000, "70" 70000000)
 set xrange[-0.5:2.5]
 set xtics 1
 set xl "{/Times-Italic k}"

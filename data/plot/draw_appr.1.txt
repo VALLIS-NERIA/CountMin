@@ -15,15 +15,16 @@ set xrange[1000:3000]
 set xtics ("1" 1000, "1.5" 1500, "2" 2000, "2.5" 2500, "3" 3000)
 
 set xl '{/Times-Italic k} ({/Symbol \264}10^3)'
-set yl 'Average Estimation Error'
+set yl 'Average Estimation Error' offset 2,0,0
+set lmargin 7
 
 FILE = "./".TOPO."_k_appr_".KPARA.".txt"
 set output OUTDIR.TOPO."_k_appr_".KPARA.SUBFIX
 
 plot \
-FILE u 1:4 with linespoints pointtype 6 dt 3 lw 5.5 pointsize 2 title 'CountSketch',\
-FILE u 1:3 with linespoints pointtype 4 dt 3 lw 5.5 pointsize 2 title 'FSS',\
-FILE u 1:2 with linespoints pointtype 2 dt 1 lw 5.5 pointsize 2 title 'CountMax'
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 6 lc rgb "#009e73" pointsize 3 title 'CountSketch',\
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 6 lc "brown" pointsize 3 title 'FSS',\
+FILE u 1:2 with linespoints pointtype 2 dt 1 lw 6 lc "dark-violet" pointsize 3 title 'CountMax'
 
 # set yl 'Elephant Hit Rate'
 
@@ -32,9 +33,9 @@ FILE u 1:2 with linespoints pointtype 2 dt 1 lw 5.5 pointsize 2 title 'CountMax'
 # set output OUTDIR.TOPO."_k_appr_hit_".KPARA.SUBFIX
 
 # plot \
-# FILE u 1:5 with linespoints pointtype 4 dt 3 lw 5.5 pointsize 2 title 'FSS',\
-# FILE u 1:7 with linespoints pointtype 6 dt 3 lw 5.5 pointsize 2 title 'CountSketch',\
-# FILE u 1:3 with linespoints pointtype 2 dt 1 lw 5.5 pointsize 2 title 'CountMax'
+# FILE u 1:5 with linespoints pointtype 4 dt 3 lw 6 lc "brown" pointsize 3 title 'FSS',\
+# FILE u 1:7 with linespoints pointtype 6 dt 3 lw 6 lc rgb "#009e73" pointsize 3 title 'CountSketch',\
+# FILE u 1:3 with linespoints pointtype 2 dt 1 lw 6 lc "dark-violet" pointsize 3 title 'CountMax'
 
 ############################################
 ############################################
@@ -47,15 +48,15 @@ set xrange[50000:300000]
 set xtics ("5" 50000, "10" 100000, "15" 150000, "20" 200000, "25" 250000, "30" 300000)
 
 set xl 'Number of Flows ({/Symbol \264}10^4)'
-set yl 'Average Estimation Error'
+set yl 'Average Estimation Error' offset 2,0,0
 
 FILE = "./".TOPO."_flow_appr_".FPARA.".txt"
 set output OUTDIR.TOPO."_flow_appr_".FPARA.SUBFIX
 
 plot \
-FILE u 1:3 with linespoints pointtype 4 dt 3 lw 5.5 pointsize 2 title 'FSS',\
-FILE u 1:4 with linespoints pointtype 6 dt 3 lw 5.5 pointsize 2 title 'CountSketch',\
-FILE u 1:2 with linespoints pointtype 2 dt  1 lw 5.5 pointsize 2 title 'CountMax'
+FILE u 1:3 with linespoints pointtype 4 dt 3 lw 6 lc "brown" pointsize 3 title 'FSS',\
+FILE u 1:4 with linespoints pointtype 6 dt 3 lw 6 lc rgb "#009e73" pointsize 3 title 'CountSketch',\
+FILE u 1:2 with linespoints pointtype 2 dt  1 lw 6 lc "dark-violet" pointsize 3 title 'CountMax'
 
 # set yl 'Elephant Hit Rate'
 
@@ -64,11 +65,11 @@ FILE u 1:2 with linespoints pointtype 2 dt  1 lw 5.5 pointsize 2 title 'CountMax
 # set output OUTDIR.TOPO."_flow_appr_hit_".FPARA.SUBFIX
 
 # plot \
-# FILE u 1:7 with linespoints pointtype 6 dt 3 lw 5.5 pointsize 2 title 'CountSketch',\
-# FILE u 1:5 with linespoints pointtype 4 dt 3 lw 5.5 pointsize 2 title 'FSS',\
-# FILE u 1:3 with linespoints pointtype 2 dt  1 lw 5.5 pointsize 2 title 'CountMax'
+# FILE u 1:7 with linespoints pointtype 6 dt 3 lw 6 lc rgb "#009e73" pointsize 3 title 'CountSketch',\
+# FILE u 1:5 with linespoints pointtype 4 dt 3 lw 6 lc "brown" pointsize 3 title 'FSS',\
+# FILE u 1:3 with linespoints pointtype 2 dt  1 lw 6 lc "dark-violet" pointsize 3 title 'CountMax'
 
-
+#set lmargin -1
 
 
 
