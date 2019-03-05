@@ -23,9 +23,9 @@ FILE = "./".TOPO."_k_load_".KPARA.".txt"
 set output OUTDIR.TOPO."_k_load_".KPARA.SUBFIX
 
 plot \
-FILE u ($3/$2):xtic(1) fill pattern 0 border -1  lt -1 title 'CountMax', \
-FILE u ($4/$2) fill pattern 2 border -1  lt -1 title 'FSS', \
-FILE u ($5/$2) fill pattern 3 border -1  lt -1 title 'CountSketch' with histogram
+FILE u ($3/$2):xtic(1) fill pattern 0 border -1 lc "dark-violet" lt -1 title 'CountMax', \
+FILE u ($4/$2) fill pattern 2 border -1 lc "brown" lt -1 title 'FSS', \
+FILE u ($5/$2) fill pattern 3 border -1 lc rgb "#009e73" lt -1 title 'CountSketch' with histogram
 
 set key left top box
 
@@ -38,6 +38,6 @@ FILE = "./".TOPO."_flow_load_".FPARA.".txt"
 set output OUTDIR.TOPO."_flow_load_".FPARA.SUBFIX
 
 plot \
-FILE u ($3/$2):xtic(1) fill pattern 0 border -1  lt -1 title 'CountMax', \
-FILE u ($4/$2) fill pattern 2 border -1  lt -1 title 'FSS', \
-FILE u ($5/$2) fill pattern 3 border -1  lt -1 title 'CountSketch' with histogram
+FILE u ($3/$2):xtic(1) fill pattern 4 border -1 lc "dark-violet" lt -1 title 'CountMax', \
+FILE u ($4/$2) fill pattern 2 border -1 lc "brown" lt -1 title 'FSS', \
+FILE u ($5/$2) fill pattern 3 border -1 lc rgb "#009e73" lt -1 title 'CountSketch' with histogram

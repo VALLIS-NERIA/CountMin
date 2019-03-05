@@ -3,7 +3,6 @@ OUTDIR = "./fig/"
 SUBFIX = ".eps"
 KPARA = "2000"
 #reset
-unset key
 set key left top box
 set key font ",22"
 
@@ -19,8 +18,8 @@ FILE = "./cpu.txt"
 set output OUTDIR."k_cpu_".KPARA.SUBFIX
 
 plot \
-FILE u 2:xtic(1) fill pattern 0 border -1  lt -1 title 'CountMax', \
-FILE u 3 fill pattern 2 border -1 lt -1 title 'FSS', \
-FILE u 4 fill pattern 3 border -1 lt -1 title 'CountSketch' with histogram
+FILE u 2:xtic(1) fill pattern 4 border -1 lc "dark-violet" lt -1 title 'CountMax', \
+FILE u 3 fill pattern 2 border -1 lc "brown" lt -1 title 'FSS', \
+FILE u 4 fill pattern 3 border -1 lc rgb "#009e73" lt -1 title 'CountSketch' with histogram
 
 set yl offset 0,0,0

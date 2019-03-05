@@ -20,6 +20,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KernelCountMax", "KernelCou
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KernelQueue", "KernelQueue\KernelQueue.vcxproj", "{0784178C-9D54-4832-A468-F55E0636F538}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Project1", "Project1\Project1.vcxproj", "{240BD20D-9AE0-4B56-B95C-79B196CD2F63}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -234,6 +236,30 @@ Global
 		{0784178C-9D54-4832-A468-F55E0636F538}.Release|x64.Build.0 = Release|x64
 		{0784178C-9D54-4832-A468-F55E0636F538}.Release|x86.ActiveCfg = Release|x86
 		{0784178C-9D54-4832-A468-F55E0636F538}.Release|x86.Build.0 = Release|x86
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Debug|ARM.ActiveCfg = Debug|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Debug|VisualKernel.ActiveCfg = Debug|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Debug|x64.ActiveCfg = Debug|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Debug|x64.Build.0 = Debug|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Debug|x86.ActiveCfg = Debug|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Debug|x86.Build.0 = Debug|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|Any CPU.ActiveCfg = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|Any CPU.Build.0 = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|ARM.ActiveCfg = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|ARM.Build.0 = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|VisualKernel.ActiveCfg = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|VisualKernel.Build.0 = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|x64.ActiveCfg = Debug|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|x64.Build.0 = Debug|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|x86.ActiveCfg = Debug|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Default|x86.Build.0 = Debug|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Release|Any CPU.ActiveCfg = Release|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Release|ARM.ActiveCfg = Release|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Release|VisualKernel.ActiveCfg = Release|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Release|x64.ActiveCfg = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Release|x64.Build.0 = Release|x64
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Release|x86.ActiveCfg = Release|Win32
+		{240BD20D-9AE0-4B56-B95C-79B196CD2F63}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

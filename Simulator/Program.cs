@@ -37,7 +37,63 @@ namespace Simulator {
         //private static int[] count_list = {50000, 100000, 200000, 300000};
         internal static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
 
+        static Task[] SketchCompare() {
+            var taskList = new List<Task>();
+            var ft = Generator.Program.LeafSpineGen();
+            var flow_count = 200000;
+            var topos = "SpineNew";
+            var k = 1000;
+            //var ths_list = new []{0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000 };
+            var d_list = Enumerable.Range(1, 10);
+            //for (var _ths = 0; _ths <= 3000; _ths += 200)
+            //foreach (int k in k_list) 
+            //var d = 2;
+            //var _ths = 1000;
+            foreach (int d in d_list) {
 
+                void _do(object obj) {
+                    var ths = 0;
+                    var topo = ft;
+                    var fin = $"{topos}_{flow_count}";
+                    var flowSet = LoadFlow(fin, topo);
+                    var cm = (IFS)obj;
+                    cm.Init(topo);
+                    foreach (Flow flow in flowSet) {
+                        cm.Update(flow, (ElemType)flow.Traffic);
+                    }
+
+                    var list_cm = new List<Tup>();
+                    foreach (Flow flow in flowSet) {
+                        var query_cm = cm.Query(flow);
+                        list_cm.Add((flow.Traffic, query_cm));
+                    }
+                    string buf = d.ToString();
+                    foreach (var threshold in new[] { 0.005, 0.01 }.Reverse()) {
+                        var ll_cm = RelativeErrorOfTop(list_cm, threshold);
+                        var count_cm = ll_cm.Count(d1 => d1 != 0);
+                        var t_cm = list_cm.Where(t => t.Item2 != 0).Sum(t => t.Item1);
+
+
+                        var total = list_cm.Sum(t => t.Item1);
+                        buf += $",{ll_cm.Average()}";
+                        //Console.WriteLine($"\r{topos},{cm.GetType().Name}, {k}, {d}, {threshold},{ll_cm.Average()}");
+                    }
+                    buf = buf.PadRight(Console.WindowWidth - 1);
+                    Console.WriteLine(buf);
+                }
+
+                //_do();
+
+                //_do();
+                var task = new Task(_do, new HalfSketch<CountMax.SwitchSketch>(2 * k, 2, 0, () => new CountMax.SwitchSketch(k, d)));
+                //var task1 = new Task(_do, new EgressSketch<CountMax.SwitchSketch>(2 * k, 2, 0, () => new CountMax.SwitchSketch(k, d)));
+                taskList.Add(task);
+                //taskList.Add(task1);
+            }
+
+
+            return taskList.ToArray();
+        }
         static void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
 #if DEBUG
