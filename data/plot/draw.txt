@@ -41,7 +41,7 @@ call "draw_cm.txt"
 #call "draw_filter.txt"
 
 set yl offset 0,0,0
-
+set xl offset 0,0,0
 
 call "draw_throughput.txt"
 call "draw_cpu.txt"
