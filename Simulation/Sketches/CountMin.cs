@@ -1,16 +1,9 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using ElemType = System.Int64;
 
-namespace Simulation {
+namespace Simulation.Sketches {
 
     public class CountMin : ITopoSketch<Flow, ElemType> {
         //public Type ElementType = new ElemType().GetType();
@@ -32,31 +25,31 @@ namespace Simulation {
 
             public CMLine(int _w) {
                 this.w = _w;
-                this.stat = new ElemType[w];
-                hash = hashFactory(rnd.Next());
+                this.stat = new ElemType[this.w];
+                this.hash = this.hashFactory(rnd.Next());
             }
 
             public int Update(object key, ElemType value, AddFunc add = null) {
-                int index = hash(key);
-                stat[index] += value;
+                int index = this.hash(key);
+                this.stat[index] += value;
                 return index;
             }
 
             public ElemType PeekUpdate(object key, ElemType value) {
-                int index = hash(key);
+                int index = this.hash(key);
                 ElemType old = this.stat[index];
-                stat[index] += value;
+                this.stat[index] += value;
                 return old;
             }
 
             public void Set(object key, ElemType value) {
-                int index = hash(key);
-                stat[index] = value;
+                int index = this.hash(key);
+                this.stat[index] = value;
             }
 
-            public ElemType Query(object key) { return stat[hash(key)]; }
+            public ElemType Query(object key) { return this.stat[this.hash(key)]; }
 
-            public ElemType this[object key] => Query(key);
+            public ElemType this[object key] => this.Query(key);
         }
 
         public class SwitchSketch {
@@ -67,20 +60,20 @@ namespace Simulation {
                 this.w = _w;
                 this.d = _d;
                 this.stat = new List<CMLine>();
-                for (int i = 0; i < d; i++) {
-                    stat.Add(new CMLine(w));
+                for (int i = 0; i < this.d; i++) {
+                    this.stat.Add(new CMLine(this.w));
                 }
             }
 
             public void Update(object key, ElemType value, AddFunc add = null) {
-                foreach (CMLine cmLine in stat) {
+                foreach (CMLine cmLine in this.stat) {
                     cmLine.Update(key, value, add);
                 }
             }
 
             public ElemType PeekUpdate(object key, ElemType value) {
                 ElemType min = long.MaxValue;
-                foreach (CMLine cmLine in stat) {
+                foreach (CMLine cmLine in this.stat) {
                     var t = cmLine.PeekUpdate(key, value);
                     if (t < min) min = t;
                 }
@@ -90,7 +83,7 @@ namespace Simulation {
 
             public ElemType Query(object key) {
                 var result = new List<ElemType>();
-                foreach (CMLine cmLine in stat) {
+                foreach (CMLine cmLine in this.stat) {
                     result.Add(cmLine.Query(key));
                 }
                 return result.Min();
@@ -125,23 +118,23 @@ namespace Simulation {
 
         public void Update(Flow flow, ElemType value) {
             foreach (Switch sw in flow.Nodes) {
-                if (!data.ContainsKey(sw)) {
-                    data.Add(sw, new SwitchSketch(W, d));
+                if (!this.data.ContainsKey(sw)) {
+                    this.data.Add(sw, new SwitchSketch(this.W, this.d));
                 }
-                data[sw].Update(flow, value, Add);
+                this.data[sw].Update(flow, value, this.Add);
             }
         }
 
-        public ElemType Query(Switch sw, Flow flow) { return data[sw].Query(flow); }
+        public ElemType Query(Switch sw, Flow flow) { return this.data[sw].Query(flow); }
 
         public ElemType Query(Flow flow) {
             var result = new List<ElemType>();
             foreach (Switch sw in flow.Nodes) {
-                result.Add(Query(sw, flow));
+                result.Add(this.Query(sw, flow));
             }
             return result.Min();
         }
 
-        public ElemType this[Flow key] => Query(key);
+        public ElemType this[Flow key] => this.Query(key);
     }
 }

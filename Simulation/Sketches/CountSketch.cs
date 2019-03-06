@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MathNet.Numerics;
-using MathNet.Numerics.Statistics;
 using ElemType = System.Int64;
 
-namespace Simulation {
+namespace Simulation.Sketches {
     public class CountSketch : IReversibleSketch<Flow, ElemType> {
         private delegate uint HashFunc(object obj);
 
@@ -23,12 +19,12 @@ namespace Simulation {
 
             public CSLine(int _w) {
                 this.w = _w;
-                this.Count = new ElemType[w];
-                this.hash = hashFactory(rnd.Next());
-                this.sHash = sHashFactory(rnd.Next());
+                this.Count = new ElemType[this.w];
+                this.hash = this.hashFactory(rnd.Next());
+                this.sHash = this.sHashFactory(rnd.Next());
             }
 
-            public ElemType this[object key] => Query(key);
+            public ElemType this[object key] => this.Query(key);
 
             // not necessary in simulation
             // private Mutex mutex;
@@ -49,14 +45,14 @@ namespace Simulation {
             }
 
             public int Update(object key, ElemType value) {
-                int index = (int) hash(key);
+                int index = (int) this.hash(key);
                 int sign = this.sHash(key);
                 this.Count[index] += sign * value;
                 return index;
             }
 
             public ElemType Query(object key) {
-                int index = (int) hash(key);
+                int index = (int) this.hash(key);
                 int sign = this.sHash(key);
                 return this.Count[index] * sign;
             }
@@ -71,15 +67,15 @@ namespace Simulation {
             public SwitchSketch(int _w, int _d) {
                 this.w = _w;
                 this.d = _d;
-                this.stat = new CSLine[d];
+                this.stat = new CSLine[this.d];
                 this.heap = new MinHeap<object, long>();
-                for (int i = 0; i < d; i++) {
-                    stat[i] = (new CSLine(w));
+                for (int i = 0; i < this.d; i++) {
+                    this.stat[i] = (new CSLine(this.w));
                 }
             }
 
             public void Update(object key, ElemType value) {
-                foreach (CSLine cmLine in stat) {
+                foreach (CSLine cmLine in this.stat) {
                     cmLine.Update(key, value);
                 }
                 // contains
@@ -87,7 +83,7 @@ namespace Simulation {
                     this.heap.ChangeValue(key, this.heap[key] + value);
                 }
                 else {
-                    var keyV = ForceQuery(key);
+                    var keyV = this.ForceQuery(key);
                     if (this.heap.Count < this.w) {
                         this.heap.Add(key, keyV);
                     }
@@ -104,7 +100,7 @@ namespace Simulation {
 
             private ElemType ForceQuery(object key) {
                 var result = new List<ElemType>();
-                foreach (CSLine cmLine in stat) {
+                foreach (CSLine cmLine in this.stat) {
                     var q = cmLine.Query(key);
                     if (q > 0)
                         result.Add(cmLine.Query(key));
@@ -126,7 +122,7 @@ namespace Simulation {
                 }
                 return this.heap[key];
                 var result = new List<ElemType>();
-                foreach (CSLine cmLine in stat) {
+                foreach (CSLine cmLine in this.stat) {
                     var q = cmLine.Query(key);
                     if (q > 0)
                         result.Add(cmLine.Query(key));
@@ -149,7 +145,7 @@ namespace Simulation {
                     return null;
                 }
                 var result = new List<ElemType>();
-                foreach (CSLine cmLine in stat) {
+                foreach (CSLine cmLine in this.stat) {
                     result.Add(cmLine.Query(key));
                 }
                 return result;
@@ -182,17 +178,17 @@ namespace Simulation {
             var t = value;
             var packet = 1750000;
             while (t > 0) {
-                _update(flow, t > packet ? packet : t);
+                this._update(flow, t > packet ? packet : t);
                 t -= packet;
             }
         }
 
         private void _update(Flow flow, ElemType value) {
             foreach (Switch sw in flow) {
-                if (!data.ContainsKey(sw)) {
-                    data.Add(sw, new SwitchSketch(W, d));
+                if (!this.data.ContainsKey(sw)) {
+                    this.data.Add(sw, new SwitchSketch(this.W, this.d));
                 }
-                data[sw].Update(flow, value);
+                this.data[sw].Update(flow, value);
             }
         }
 
@@ -221,7 +217,7 @@ namespace Simulation {
             }
         }
 
-        public long this[Flow key] => Query(key);
+        public long this[Flow key] => this.Query(key);
 
         public IEnumerable<Flow> GetAllKeys() {
             var list = (IEnumerable<Flow>) new List<Flow>();

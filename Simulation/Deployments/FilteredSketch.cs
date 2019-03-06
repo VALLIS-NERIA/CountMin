@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Simulation.Sketches;
 
-namespace Simulation {
+namespace Simulation.Deployments {
     using ElemType = Int64;
 
     public delegate T SketchFactory <out T>() where T : ISketch<ElemType>;
@@ -34,7 +32,7 @@ namespace Simulation {
 
             foreach (var sw in topo.Switches) {
                 if (sw.IsEdge) {
-                    this.data.Add(sw, factoryMethod());
+                    this.data.Add(sw, this.factoryMethod());
                 }
                 else {
                     this.filter.Add(sw, new CountMin.SwitchSketch(this.W, this.D));
@@ -46,7 +44,7 @@ namespace Simulation {
             var t = value;
             var packet = 500;
             while (t > 0) {
-                _update(flow, t > packet ? packet : t);
+                this._update(flow, t > packet ? packet : t);
                 t -= packet;
             }
         }
@@ -91,7 +89,7 @@ namespace Simulation {
                     //    data.Add(sw, new SwitchSketch(W, d));
                     //}
 
-                    data[sw].Update(flow, value);
+                    this.data[sw].Update(flow, value);
                 }
                 else {
                     // Filtered.

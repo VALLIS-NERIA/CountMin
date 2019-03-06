@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Simulation.Sketches;
 
-namespace Simulation {
+namespace Simulation.Deployments {
     using ElemType = Int64;
 
     public class HalfSketch<T> : IFS, ITopoSketch<Flow, ElemType> where T : class, ISketch<ElemType> {
@@ -30,7 +28,7 @@ namespace Simulation {
 
             foreach (var sw in topo.Switches) {
                 if (sw.IsEdge) {
-                    this.data.Add(sw, factoryMethod());
+                    this.data.Add(sw, this.factoryMethod());
                 }
             }
         }

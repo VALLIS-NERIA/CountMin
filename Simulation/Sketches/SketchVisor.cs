@@ -1,13 +1,8 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MathNet.Numerics;
-using static System.Math;
 
-namespace Simulation {
+namespace Simulation.Sketches {
     using ElemType = System.Int64;
 
     public class SketchVisor : ITopoSketch<Flow, ElemType> {
@@ -36,9 +31,9 @@ namespace Simulation {
                 var a2 = l1.ElementAt(1);
                 var ak = l1.Last();
                 var b = (double) (a1 - 1) / (a2 - 1);
-                var theta = b == 1 ? 1 : Log(0.5, b);
-                var _e = Pow(1 - delta, 1 / theta) * ak;
-                var __e = (ElemType) Round(_e);
+                var theta = b == 1 ? 1 : Math.Log(0.5, b);
+                var _e = Math.Pow(1 - delta, 1 / theta) * ak;
+                var __e = (ElemType) Math.Round(_e);
                 if (__e < 0) {
                     ;
                 }
@@ -54,17 +49,17 @@ namespace Simulation {
             public bool Update(Flow f, ElemType v) {
                 checked {
                     this.V += v;
-                    if (hashMap.ContainsKey(f)) {
-                        hashMap[f] += (0, v, 0);
+                    if (this.hashMap.ContainsKey(f)) {
+                        this.hashMap[f] += (0, v, 0);
                         return false;
                     }
-                    else if (hashMap.Count < K) {
-                        hashMap[f] = new Entry {e = E, r = v, d = 0};
+                    else if (this.hashMap.Count < this.K) {
+                        this.hashMap[f] = new Entry {e = this.E, r = v, d = 0};
                         return false;
                     }
                     else {
                         var list = this.hashMap.Select(e => e.Value.r).Concat(new List<ElemType> {v});
-                        var _e = ComputeThresh(list);
+                        var _e = this.ComputeThresh(list);
                         var readyRemove = new List<Flow>();
                         var keys = this.hashMap.Keys.ToList();
                         foreach (var key in keys) {
@@ -76,8 +71,8 @@ namespace Simulation {
                         foreach (var key in readyRemove) {
                             this.hashMap.Remove(key);
                         }
-                        if (v > _e && this.hashMap.Count < K) {
-                            hashMap[f] = new Entry {e = E, r = v - _e, d = _e};
+                        if (v > _e && this.hashMap.Count < this.K) {
+                            this.hashMap[f] = new Entry {e = this.E, r = v - _e, d = _e};
                         }
                         this.E += _e;
                         return true;
@@ -85,9 +80,9 @@ namespace Simulation {
                 }
             }
 
-            public void Update(object key, long value) => Update((Flow) key, value);
+            public void Update(object key, long value) => this.Update((Flow) key, value);
 
-            public ElemType Query(object key) => Query((Flow) key);
+            public ElemType Query(object key) => this.Query((Flow) key);
             public ElemType Query(Flow key) {
                 if (this.hashMap.ContainsKey(key)) {
                     checked {
@@ -103,7 +98,7 @@ namespace Simulation {
                 }
             }
 
-            public ElemType this[Flow key] => Query(key);
+            public ElemType this[Flow key] => this.Query(key);
 
             public SwitchSketch(int k) {
                 this.K = k;
@@ -113,7 +108,7 @@ namespace Simulation {
 
         private Dictionary<Switch, SwitchSketch> map;
         public int K { get; private set; }
-        public int W => K;
+        public int W => this.K;
 
         public SketchVisor() : this(1000) { }
 
@@ -156,6 +151,6 @@ namespace Simulation {
             return avg;
         }
 
-        public ElemType this[Flow key] => Query(key);
+        public ElemType this[Flow key] => this.Query(key);
     }
 }

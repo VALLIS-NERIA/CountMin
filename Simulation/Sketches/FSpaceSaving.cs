@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ElemType = System.Int64;
 
-namespace Simulation {
+namespace Simulation.Sketches {
     public class FSpaceSaving : ITopoSketch<Flow, ElemType> {
         private delegate uint HashFunc(object obj);
 
@@ -33,9 +31,9 @@ namespace Simulation {
             public SwitchSketch(int _w) {
                 this.h = _w;
                 this.m = _w;
-                this.Alpha = new ElemType[h];
-                this.Counter = new int[h];
-                this.hash = hashFactory(rnd.Next());
+                this.Alpha = new ElemType[this.h];
+                this.Counter = new int[this.h];
+                this.hash = this.hashFactory(rnd.Next());
                 this.heap = new MinHeap<object, Entry>();
             }
 
@@ -45,7 +43,7 @@ namespace Simulation {
 
             public void Update(object key, ElemType value) {
                 var _u = this.heap.Count < this.m ? 0 : this.heap.Min.Value.f;
-                int index = (int) hash(key);
+                int index = (int) this.hash(key);
                 if (this.Counter[index] != 0) {
                     if (this.heap.ContainsKey(key)) {
                         this.heap[key].f += value;
@@ -55,7 +53,7 @@ namespace Simulation {
                 //this.Alpha[index] += value;
 
                 if (this.Alpha[index] +value> _u) {
-                    if (this.heap.Count == m) {
+                    if (this.heap.Count == this.m) {
                         var min = this.heap.ExtractMin();
                         var kndex = this.hash(min.Key);
                         this.Counter[kndex] -= 1;
@@ -103,17 +101,17 @@ namespace Simulation {
             var t = value;
             var packet = 30000000;
             while (t > 0) {
-                _update(flow, t > packet ? packet : t);
+                this._update(flow, t > packet ? packet : t);
                 t -= packet;
             }
         }
 
         private void _update(Flow flow, ElemType value) {
             foreach (Switch sw in flow) {
-                if (!data.ContainsKey(sw)) {
-                    data.Add(sw, new SwitchSketch(W));
+                if (!this.data.ContainsKey(sw)) {
+                    this.data.Add(sw, new SwitchSketch(this.W));
                 }
-                data[sw].Update(flow, value);
+                this.data[sw].Update(flow, value);
             }
         }
 
@@ -146,7 +144,7 @@ namespace Simulation {
             }
         }
 
-        public long this[Flow key] => Query(key);
+        public long this[Flow key] => this.Query(key);
 
         public IEnumerable<Flow> GetAllKeys() {
             var list = (IEnumerable<Flow>) new List<Flow>();

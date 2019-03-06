@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Simulation {
+namespace Simulation.Deployments {
     using ElemType = Int64;
 
     public class EgressSketch <T> : IFS, ITopoSketch<Flow, ElemType> where T : class, ISketch<ElemType> {
@@ -28,7 +25,7 @@ namespace Simulation {
         public void Init(Topology topo) {
             foreach (var sw in topo.Switches) {
                 if (sw.IsEdge) {
-                    this.data.Add(sw, factoryMethod());
+                    this.data.Add(sw, this.factoryMethod());
                 }
             }
         }
