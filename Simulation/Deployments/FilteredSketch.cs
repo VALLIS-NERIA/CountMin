@@ -4,12 +4,8 @@ using Simulation.Sketches;
 
 namespace Simulation.Deployments {
     using ElemType = Int64;
-
-    public delegate T SketchFactory <out T>() where T : ISketch<ElemType>;
-
-
-
-    public class FilteredSketch <T> : IFS, ITopoSketch<Flow, ElemType> where T : class, ISketch<ElemType> {
+    
+    public class FilteredSketch <T> : IFS, ITopoSketch<Flow, ElemType> where T : class, ISketch<object, ElemType> {
         private int _threshold = 1000;
 
         private Dictionary<Switch, T> data = new Dictionary<Switch, T>();

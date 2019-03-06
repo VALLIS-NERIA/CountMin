@@ -7,6 +7,8 @@ namespace Simulation.Sketches {
     public class FSpaceSaving : ITopoSketch<Flow, ElemType> {
         private delegate uint HashFunc(object obj);
 
+        public virtual string SketchClassName => typeof(FSpaceSaving).DeclaringType.Name;
+
         private static Random rnd = new Random();
 
         public class Entry : IComparable<Entry> {
@@ -20,7 +22,7 @@ namespace Simulation.Sketches {
             public int CompareTo(Entry other) { return this.f.CompareTo(other.f); }
         }
 
-        public class SwitchSketch:ISketch<ElemType> {
+        public class SwitchSketch:ISketch<Flow,ElemType> {
             public ElemType[] Alpha;
             public int[] Counter;
             private MinHeap<object, Entry> heap;
@@ -41,7 +43,7 @@ namespace Simulation.Sketches {
             // private Mutex mutex;
             private HashFunc hashFactory(int seed) { return o => (uint) ((uint) (o.GetHashCode() ^ seed) % this.h); }
 
-            public void Update(object key, ElemType value) {
+            public void Update(Flow key, ElemType value) {
                 var _u = this.heap.Count < this.m ? 0 : this.heap.Min.Value.f;
                 int index = (int) this.hash(key);
                 if (this.Counter[index] != 0) {
@@ -67,7 +69,7 @@ namespace Simulation.Sketches {
                 }
             }
 
-            public ElemType Query(object key) {
+            public ElemType Query(Flow key) {
                 if (this.heap.ContainsKey(key)) {
                     var ret = this.heap[key].f /*- this.heap[key].e*/;
                     return ret > 0 ? ret : 0;

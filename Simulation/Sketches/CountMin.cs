@@ -7,6 +7,8 @@ namespace Simulation.Sketches {
 
     public class CountMin : ITopoSketch<Flow, ElemType> {
         //public Type ElementType = new ElemType().GetType();
+        public virtual string SketchClassName => typeof(CountMin).DeclaringType.Name;
+
         private static Random rnd = new Random();
 
         private delegate int HashFunc(object obj);

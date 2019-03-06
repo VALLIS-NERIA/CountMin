@@ -1,41 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Simulation.Deployments {
     using ElemType = Int64;
 
-    public class EgressSketch <T> : IFS, ITopoSketch<Flow, ElemType> where T : class, ISketch<ElemType> {
+    public class EgressSketch <T> :TopoSketchBase<T> where T : class, ISketch<object,ElemType> {
         private static Random rnd = new Random();
 
+        public EgressSketch(SketchFactory<T> factory, Topology topo, int w) : base(factory, topo, w) { }
 
-        private Dictionary<Switch, T> data = new Dictionary<Switch, T>();
-        private SketchFactory<T> factoryMethod;
+        protected override Dictionary<Switch, T> DeploySketches() => this.topo.Switches.Where(sw => sw.IsEdge).ToDictionary(sw => sw, sw => base.factory());
 
-        public int W { get; private set; }
-        public int D { get; private set; }
-
-        public string SketchClassName => typeof(T).DeclaringType.Name;
-
-        public EgressSketch(int w, int d, int threshold, SketchFactory<T> factoryMethod) {
-            this.factoryMethod = factoryMethod;
-            this.W = w;
-            this.D = d;
+        public override void Update(Flow flow, ElemType value) {
+            this.sketches[flow.OutgressSwitch].Update(flow, value);
+            this.throughput[flow.OutgressSwitch] += value;
         }
 
-        public void Init(Topology topo) {
-            foreach (var sw in topo.Switches) {
-                if (sw.IsEdge) {
-                    this.data.Add(sw, this.factoryMethod());
-                }
-            }
-        }
-
-        public void Update(Flow flow, ElemType value) {
-            this.data[flow.OutgressSwitch].Update(flow, value);
-        }
-
-        public ElemType Query(Flow flow) { return this.data[flow.OutgressSwitch].Query(flow); }
-
-        public ElemType this[Flow key] => this.Query(key);
+        public override ElemType Query(Flow flow) { return this.sketches[flow.OutgressSwitch].Query(flow); }
     }
 }

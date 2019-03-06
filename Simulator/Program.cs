@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using MathNet.Numerics.Statistics;
 using Newtonsoft.Json;
 using Simulation;
+using Simulation.Deployments;
 using Simulation.Sketches;
 using static Simulation.Utils;
 using Switch = Simulation.Switch;
@@ -16,7 +17,6 @@ using Switch = Simulation.Switch;
 namespace Simulator {
     using Tup = System.ValueTuple<double, double>;
     using ElemType = Int64;
-    using CountMaxSketch = Sketch;
 
     static partial class Program {
         static Random rnd = new Random();
@@ -37,8 +37,9 @@ namespace Simulator {
         //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
         //private static int[] count_list = {50000, 100000, 200000, 300000};
         internal static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
+        internal static int[] count_list1 = {50001, 100001, 150001, 200001, 250001, 300001};
 
-        static void Main() {
+        static  void Main() {
             Directory.SetCurrentDirectory(@"..\..\..\data");
 #if DEBUG
             Debug.WriteLine("--DEBUG--");
@@ -46,47 +47,45 @@ namespace Simulator {
             //HalfHalfTest();
             //Filter();
             //TTT();
-            IEnumerable<Task> taskList = new List<Task>();
-            var test = new {Key = "test", Value = "test"};
-
-            //taskList = taskList.Concat(FSSTesting());
-            //SketchAppr();
-            //taskList = taskList.Concat(CMReroute());
-            //SVReroute();
-            //taskList = taskList.Concat(SketchCompareAppr());
-            taskList = taskList.Concat(SketchCompare());
-            //taskList = taskList.Concat(ProtoNew());
-            //taskList = taskList.Concat(ConcurrentReroute());
-            //taskList = taskList.Concat(Prototype());
-            //PartialReroute();
-            //taskList = taskList.Concat(BenchMark("Original"));
-            //taskList = taskList.Concat(BenchMark("CountMax", false));
-            //taskList = taskList.Concat(BenchMark(nameof(FSpaceSaving), false));
-            //taskList = taskList.Concat(BenchMark("CountSketch", false));
-            //SketchAppr();
-            //SketchCompareTime();
-            //HalfHalfTest();
+            IEnumerable<Task> taskList = new List<Task>
+            {
+                //MscTest()
+            };
             var taskArray = taskList.ToArray();
-            RunTask(taskArray, 3, false);
-            //PrintToTxt();
-            //var oldOut = Console.Out;
-            //var sw = new StreamWriter("dddddddaaaata.txt");
-            //Console.SetOut(sw);
-            //RerouteEvalProto();
-            //sw.Flush();
-            //Console.SetOut(oldOut);
-            //sw.Close();
+            //RunTask(taskArray, 3, false);
+
+            MscTest();
             Console.WriteLine("Finished.");
             Console.ReadLine();
         }
 
-        private static Task MscTest() {
-            var sp = Generator.Program.LeafSpineGen();
-            var flowSet = LoadFlow("SpineNew_200000", sp);
+        private static void MscTest() {
+            int k = 1000;
+            foreach (int c in count_list1) 
+            //foreach (int k in k_list) 
+            {
+                var sp = Generator.Program.FatTreeGen();
+                var flowSet = LoadFlow($"Fattree_{c}", sp);
+                var msc = new Msc(sp, flowSet, (int) (flowSet[flowSet.Count - 1].Traffic * 1.05));
+                var rules = msc.GetRules();
+
+                var ske = new EgressSketch<CountMax>(() => new CountMax(k, 2), sp, k);
+                var skf = new HalfSketch<CountMax>(() => new CountMax(k, 2), sp, k);
+                var skr = new RuledSketch<CountMax>(() => new CountMax(k, 2), sp, k, rules);
+
+                foreach (Flow flow in flowSet) {
+                    ske.Update(flow, (long) flow.Traffic);
+                    skf.Update(flow, (long) flow.Traffic);
+                    skr.Update(flow, (long) flow.Traffic);
+                }
+
+                var erre = RelativeError2(flowSet, 0.01, ske);
+                var errf = RelativeError2(flowSet, 0.01, skf);
+                var errr = RelativeError2(flowSet, 0.01, skr);
+            Console.WriteLine($"{c}\t {erre.Average()} \t {errf.Average()} \t {errr.Average()}\t{ske.MaxLoad}\t{skf.MaxLoad} \t{skr.MaxLoad}");
+            }
 
         }
-
-        private delegate Topology TopoFactory();
 
         struct HHData {
             public double hh_cm1;
@@ -117,9 +116,11 @@ namespace Simulator {
             public HHData hh;
         }
 
-        static List<DataLine> data = new List<DataLine>();
-
         #region tools
+
+        //private static List<double> SketchError(ISketch<long> sk, IEnumerable<Flow> flowSet) {
+
+        //}
 
         private static double ElephantCover(IEnumerable<(double, double)> list, double threshold) {
             var tuples = list.ToList();
@@ -133,11 +134,12 @@ namespace Simulator {
         private static List<double> RelativeErrorOfTop(IEnumerable<(double, double)> list, double threshold) {
             var list1 = list;
             list1 = list1.OrderByDescending(t => t.Item1);
-            IEnumerable<(double, double)> valueTuples = list1 as (double, double)[] ?? list1.ToArray();
+            IEnumerable<(double, double)> valueTuples = list1.ToArray();
             var q = from tuple in valueTuples.Take((int) (threshold * valueTuples.Count())) select (Math.Abs(tuple.Item2 - tuple.Item1) / tuple.Item1);
             return q.ToList();
         }
-        static List<double> RelativeError2(List<Flow> flowSet, double threshold, params ISketch<ElemType>[] sketch) {
+
+        static List<double> RelativeError2(List<Flow> flowSet, double threshold, params ISketch<Flow, ElemType>[] sketch) {
             flowSet.Sort((f1, f2) => (int) (f2.Traffic - f1.Traffic));
             var top = flowSet.Take((int) (threshold * flowSet.Count));
             var q = new List<double>();

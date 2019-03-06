@@ -9,6 +9,8 @@ namespace Simulation.Sketches {
 
         private delegate int SHashFunc(object obj);
 
+        public virtual string SketchClassName => typeof(CountSketch).DeclaringType.Name;
+
         public class CSLine {
             public ElemType[] Count;
             private int w;
@@ -58,7 +60,7 @@ namespace Simulation.Sketches {
             }
         }
 
-        public class SwitchSketch : ISketch<ElemType> {
+        public class SwitchSketch : ISketch<object, ElemType> {
             private CSLine[] stat;
             private int w, d;
 

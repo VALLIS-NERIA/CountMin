@@ -6,6 +6,9 @@ namespace Simulation.Sketches {
     using ElemType = System.Int64;
 
     public class SketchVisor : ITopoSketch<Flow, ElemType> {
+        public virtual string SketchClassName => typeof(SketchVisor).DeclaringType.Name;
+
+
         protected class Entry {
             public ElemType e;
             public ElemType r;
@@ -18,7 +21,7 @@ namespace Simulation.Sketches {
             public static implicit operator Entry((ElemType _e, ElemType _r, ElemType _d) right) { return new Entry {e = right._e, d = right._d, r = right._r}; }
         }
 
-        public class SwitchSketch:ISketch<ElemType> {
+        public class SwitchSketch:ISketch<object, ElemType> {
             private Dictionary<Flow, Entry> hashMap;
 
             public int K { get; private set; }

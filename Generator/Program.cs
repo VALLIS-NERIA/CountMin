@@ -23,7 +23,9 @@ namespace Generator {
         static RoutingAlgorithm[] algo_list = {OSPF.FindPath /*, Greedy.FindPath*/};
 
         //static int[] count_list = {10000, 20000, 30000, 40000, 50000};
-        private static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
+        //private static int[] count_list = {50000, 100000, 150000, 200000, 250000, 300000};
+        private static int[] count_list = {50001, 100001, 150001, 200001, 250001, 300001};
+        //private static int[] count_list = {200001};
         //private static int[] count_list = {1000, 2000, 3000};
 
         static void NewGen(Topology topo, string topoName) {
@@ -59,11 +61,11 @@ namespace Generator {
                     var flowSet = new List<Flow>();
                     var flowCount = traffics.Length;
                     while (flowCount-- > 0) {
-                        //var src = edges[rnd.Next() % len];
-                        //var dst = edges[rnd.Next() % len];
+                        var src = edges[rnd.Next() % (len/2)];
+                        var dst = edges[rnd.Next() % (len/2) + (len/2)];
 
-                        var src = edges.GetRandom();
-                        var dst = edges.GetRandom();
+                        //var src = edges.GetRandom();
+                        //var dst = edges.GetRandom();
                         while (dst == src) {
                             dst = edges.GetRandom();
                         }
@@ -104,13 +106,13 @@ namespace Generator {
             var ft = FatTreeGen(8);
             var sp = LeafSpineGen();
             var proto = TestTopoGen();
-            NewGen(sp, "SpineNew");
-            //NewGen(ft, "Fattree");
+            //NewGen(sp, "SpineNew");
+            NewGen(ft, "Fattree");
             //NewGen(hy, "HyperX");
-            foreach (int count in count_list) {
-                var refSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText($"Fattree_{count}.json")).flows.Select(f => f.traffic);
-                Console.WriteLine($"{count}, {refSet.Average()}");
-            }
+            //foreach (int count in count_list) {
+            //    var refSet = JsonConvert.DeserializeObject<CoflowJson>(File.ReadAllText($"Fattree_{count}.json")).flows.Select(f => f.traffic);
+            //    Console.WriteLine($"{count}, {refSet.Average()}");
+            //}
 
             Console.ReadLine();
         }

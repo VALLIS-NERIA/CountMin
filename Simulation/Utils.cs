@@ -11,7 +11,16 @@ namespace Simulation {
     public static class Utils {
         public static T GetRandom <T>(this IEnumerable<T> list) {
             var enumerable = list.ToList();
-            return enumerable.ElementAt(Binomial.Sample(0.5, enumerable.Count-1));
+            return enumerable.ElementAt(DiscreteUniform.Sample(0, enumerable.Count - 1));
+        }
+
+        public static long Median(this IList<long> list) {
+            if (list.Count % 2 == 1) {
+                return list[list.Count / 2];
+            }
+            else {
+                return (list[list.Count / 2] + list[list.Count / 2 - 1]) / 2;
+            }
         }
 
         public static void RunTask(Task[] taskArray, int count=3, bool pause = true) {
