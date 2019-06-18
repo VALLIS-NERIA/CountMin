@@ -73,9 +73,9 @@ namespace Simulation.Deployments {
 
         private class KnapsackResult {
             public Switch Sw;
-            public HashSet<SubWildcard> Swcs;
+            public IEnumerable<SubWildcard> Swcs;
             public int Value;
-            public int Cost;
+            //public int Cost;
         }
 
         /* input */
@@ -91,6 +91,8 @@ namespace Simulation.Deployments {
         /* output */
         private readonly Dictionary<Switch, IEnumerable<Wildcard>> rules;
         private readonly HashSet<Flow> coveredFlows;
+
+        public long AlgoTime { get; }
 
         public Dictionary<Switch, IFlowRule> GetRules() {
             return this.rules.ToDictionary(p => p.Key, p => (IFlowRule) new ODRule(p.Value));
@@ -109,7 +111,9 @@ namespace Simulation.Deployments {
             this.coveredFlows = new HashSet<Flow>();
 
             this.DivideWildcards();
+            var t = DateTime.Now;
             this.GMSC();
+            this.AlgoTime = (long)(DateTime.Now - t).TotalMilliseconds;
         }
 
 
@@ -155,11 +159,12 @@ namespace Simulation.Deployments {
         }
 
 
+
         // returns the covered flows.
         private void GMSC() {
             var V = new HashSet<Switch>(this.topo.Switches);
             while (V.Count > 0) {
-                var results = V.Select(sw => GreedyKnapsack(sw, this.budget, this.swcDict[sw].Values)).OrderByDescending(r => r.Value);
+                var results = V.Select(sw => DpKnapsack(sw, this.budget, this.swcDict[sw].Values)).OrderByDescending(r => r.Value);
                 var top = results.First();
                 this.rules[top.Sw] = top.Swcs.Select(swc => swc.Wildcard);
                 this.coveredFlows.UnionWith(top.Swcs.SelectMany(swc => swc.Flows));
@@ -185,7 +190,61 @@ namespace Simulation.Deployments {
                 }
             }
 
-            return new KnapsackResult {Sw = sw, Swcs = pack, Cost = weight, Value = value};
+            return new KnapsackResult {Sw = sw, Swcs = pack, Value = value};
+        }
+
+        private class DpItem {
+            private int _value;
+            private HashSet<SubWildcard> items;
+
+            public IEnumerable<SubWildcard> Items => this.items;
+
+            public int Value => _value;
+
+            public DpItem() {
+                this.items = new HashSet<SubWildcard>();
+                this._value = 0;
+            }
+
+            public void ReplaceWith(DpItem other) {
+                this.items = new HashSet<SubWildcard>(other.items);
+                this._value = other._value;
+            }
+
+            public bool Add(SubWildcard swc) {
+                bool ret = this.items.Add(swc);
+                if (ret) {
+                    this._value += swc.Value;
+                }
+
+                return ret;
+            }
+        }
+
+        private static KnapsackResult DpKnapsack(Switch sw, int budget, IEnumerable<SubWildcard> items) {
+            //budget = budget / 1000 + 1;
+
+
+            var dp = new DpItem[budget+1];
+            for (int j = 0; j <= budget; j++) {
+                dp[j] = new DpItem();
+            }
+
+            int i = 0;
+            foreach (var item in items) {
+                i++;
+                int value = item.Value;
+                int weight = (int) (item.Cost / 1f);
+                for (int v = budget; v >= weight; v--) {
+                    var with = dp[v - weight];
+                    if (with.Value + value > dp[v].Value) {
+                        dp[v].ReplaceWith(with);
+                        dp[v].Add(item);
+                    }
+                }
+            }
+
+            return new KnapsackResult {Sw = sw, Swcs = dp[budget].Items, Value = dp[budget].Value};
         }
     }
 }

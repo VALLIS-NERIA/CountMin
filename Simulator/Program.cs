@@ -59,14 +59,22 @@ namespace Simulator {
             Console.ReadLine();
         }
 
+        public static int RoundDown(this double me, int divisor) {
+            int integer = (int) (me / divisor);
+            double remain = me / divisor - integer;
+            int add = rnd.NextDouble() < remain ? 1 : 0;
+            return integer + add;
+        }
+
         private static void MscTest() {
             int k = 1000;
             foreach (int c in count_list1) 
             //foreach (int k in k_list) 
             {
                 var sp = Generator.Program.FatTreeGen();
-                var flowSet = LoadFlow($"Fattree_{c}", sp);
-                var msc = new Msc(sp, flowSet, (int) (flowSet[flowSet.Count - 1].Traffic * 1.05));
+                var flowSet = ((IEnumerable<Flow>)LoadFlow($"Fattree_{c}", sp)).Reverse().Skip(100).ToList();
+                //flowSet.ForEach(f => f.Traffic =f.Traffic.RoundDown(1000));
+                var msc = new Msc(sp, flowSet, (int) (flowSet[0].Traffic * 10));
                 var rules = msc.GetRules();
 
                 var ske = new EgressSketch<CountMax>(() => new CountMax(k, 2), sp, k);
@@ -79,10 +87,10 @@ namespace Simulator {
                     skr.Update(flow, (long) flow.Traffic);
                 }
 
-                var erre = RelativeError2(flowSet, 0.01, ske);
-                var errf = RelativeError2(flowSet, 0.01, skf);
-                var errr = RelativeError2(flowSet, 0.01, skr);
-            Console.WriteLine($"{c}\t {erre.Average()} \t {errf.Average()} \t {errr.Average()}\t{ske.MaxLoad}\t{skf.MaxLoad} \t{skr.MaxLoad}");
+                var erre = RelativeError2(flowSet, 0.005, ske);
+                var errf = RelativeError2(flowSet, 0.005, skf);
+                var errr = RelativeError2(flowSet, 0.005, skr);
+            Console.WriteLine($"{c}\t {msc.AlgoTime}\t {erre.Average(i=>i.Error)} \t {errf.Average(i => i.Error)} \t {errr.Average(i => i.Error)}\t{ske.MaxLoad}\t{skf.MaxLoad} \t{skr.MaxLoad}");
             }
 
         }
@@ -139,10 +147,24 @@ namespace Simulator {
             return q.ToList();
         }
 
-        static List<double> RelativeError2(List<Flow> flowSet, double threshold, params ISketch<Flow, ElemType>[] sketch) {
+        private struct FlowEsti {
+            public double Actual;
+            public double Estimated;
+            public double Error;
+
+            public FlowEsti(double act, double esti) {
+                this.Actual = act;
+                this.Estimated = esti;
+                this.Error = Math.Abs((esti - act) / act);
+            }
+
+            public override string ToString() => $"({this.Actual}, {this.Estimated}, {this.Error})";
+        }
+
+        static List<FlowEsti> RelativeError2(List<Flow> flowSet, double threshold, params ISketch<Flow, ElemType>[] sketch) {
             flowSet.Sort((f1, f2) => (int) (f2.Traffic - f1.Traffic));
             var top = flowSet.Take((int) (threshold * flowSet.Count));
-            var q = new List<double>();
+            var q = new List<FlowEsti>();
             foreach (Flow f in top) {
                 ElemType esti = 0;
                 foreach (var s in sketch) {
@@ -150,7 +172,7 @@ namespace Simulator {
                     if (res > esti) esti = res;
                 }
 
-                q.Add(Math.Abs((esti - f.Traffic) / f.Traffic));
+                q.Add(new FlowEsti(f.Traffic, esti));
             }
 
             return q;
